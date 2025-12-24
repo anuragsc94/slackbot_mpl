@@ -109,10 +109,22 @@ def build_slack_app(slack_bot_token: str) -> App:
             # Upload CSV only if files:write scope is granted
             _upload_df_csv(client=client, df=df_csv, channel=channel, thread_ts=thread_ts, filename_prefix="csv_result")
 
-        except Exception as e:
-            logger.exception("Handler failed")
-            say(text=f"❌ Error: {e}", channel=channel, thread_ts=thread_ts)
+        # except Exception as e:
+        #     logger.exception("Message handler failed")
+        #     say(text=f"❌ Error: {e}", channel=channel, thread_ts=thread_ts)
 
+        except Exception as e:
+            logger.exception("Message handler failed")
+            msg = str(e)
+
+            # If BigQuery rejects non-SELECT SQL, show error + full scope fallback
+            if ("not a select query" in msg.lower()) or ("request not allowed" in msg.lower()):
+                combined = f"❌ Error: {msg}\n\n{SCOPE_FALLBACK_MSG}"
+                say(text=combined, channel=channel, thread_ts=thread_ts)
+                return
+
+            # Otherwise show the raw error
+            say(text=f"❌ Error: {msg}", channel=channel, thread_ts=thread_ts)
     
     # @app.event("message")
     # def on_message(event, say, client, logger):
@@ -215,7 +227,21 @@ def build_slack_app(slack_bot_token: str) -> App:
                 filename_prefix="csv_result",
             )
 
+        # except Exception as e:
+        #     logger.exception("Message handler failed")
+        #     say(text=f"❌ Error: {e}", channel=channel, thread_ts=thread_ts)
+
         except Exception as e:
             logger.exception("Message handler failed")
-            say(text=f"❌ Error: {e}", channel=channel, thread_ts=thread_ts)
+            msg = str(e)
+
+            # If BigQuery rejects non-SELECT SQL, show error + full scope fallback
+            if ("not a select query" in msg.lower()) or ("request not allowed" in msg.lower()):
+                combined = f"❌ Error: {msg}\n\n{SCOPE_FALLBACK_MSG}"
+                say(text=combined, channel=channel, thread_ts=thread_ts)
+                return
+
+            # Otherwise show the raw error
+            say(text=f"❌ Error: {msg}", channel=channel, thread_ts=thread_ts)
+    
     return app
