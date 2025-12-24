@@ -76,12 +76,12 @@ def build_slack_app(slack_bot_token: str) -> App:
         thread_ts = event.get("ts")
         user_question = _strip_mention(event.get("text"))
 
-    # ✅ PRE-SQL fallback (intent guardrails)    
-    fallback, reason = should_fallback(user_question)
-    if fallback:
-           say(text=SCOPE_FALLBACK_MSG, channel=channel, thread_ts=thread_ts)
+        # ✅ PRE-SQL fallback (intent guardrails)
+        fallback, reason = should_fallback(user_question)
+        if fallback:
+            say(text=SCOPE_FALLBACK_MSG, channel=channel, thread_ts=thread_ts)
             return
-    
+
         if not user_question:
             say(
                 text="Ask me like: `@bot GMV and CM1 by dt for last 7 days`",
@@ -92,13 +92,13 @@ def build_slack_app(slack_bot_token: str) -> App:
 
         try:
             sql = generate_bq_sql(user_question)
-        # ✅ POST-SQL fallback (LLM safety net)
-        if sql_is_invalid_message(sql):
-             say(text=SCOPE_FALLBACK_MSG, channel=channel, thread_ts=thread_ts)
-             return
-                
-            summary = summarize_sql_for_user_sqlglot(sql, user_question=text)
-            say(text=format_sql_summary_for_slack(summary), channel=channel, thread_ts=thread_ts)   
+            # ✅ POST-SQL fallback (LLM safety net)
+            if sql_is_invalid_message(sql):
+                say(text=SCOPE_FALLBACK_MSG, channel=channel, thread_ts=thread_ts)
+                return
+
+            summary = summarize_sql_for_user_sqlglot(sql, user_question=user_question)
+            say(text=format_sql_summary_for_slack(summary), channel=channel, thread_ts=thread_ts)
             df_preview = run_sql_df(sql, max_rows=PREVIEW_ROWS)
             df_csv = run_sql_df(sql, max_rows=CSV_MAX_ROWS)
 
@@ -113,28 +113,90 @@ def build_slack_app(slack_bot_token: str) -> App:
             logger.exception("Handler failed")
             say(text=f"❌ Error: {e}", channel=channel, thread_ts=thread_ts)
 
+    
+    # @app.event("message")
+    # def on_message(event, say, client, logger):
+    #     # Ignore bot messages to avoid loops
+    #     if event.get("bot_id"):
+    #         return
+
+    #     channel = event.get("channel")
+    #     thread_ts = event.get("ts")
+    #     text = (event.get("text") or "").strip()
+
+    #     logger.info(f"✅ message event received: {text}")
+
+    #     # If user just says hi, respond with a quick health check
+    #     if text.lower() in {"hi", "hello", "hey"}:
+    #         say(text="Hi! I’m alive ✅ Try: `GMV and CM1 by dt for last 7 days`", channel=channel, thread_ts=thread_ts)
+    #         return
+
+    #     # Optional: treat normal messages like questions (same pipeline as mentions)
+    #     try:
+    #         sql = generate_bq_sql(text)
+    #         summary = summarize_sql_for_user_sqlglot(sql, user_question=text)
+    #         say(text=format_sql_summary_for_slack(summary), channel=channel, thread_ts=thread_ts)
+    #         df_preview = run_sql_df(sql, max_rows=PREVIEW_ROWS)
+    #         df_csv = run_sql_df(sql, max_rows=CSV_MAX_ROWS)
+
+    #         say(text=f"*Generated SQL:*\n```{sql}```", channel=channel, thread_ts=thread_ts)
+    #         say(
+    #             text=f"*Preview (top {PREVIEW_ROWS} rows):*\n{_df_to_slack_table(df_preview, max_rows=PREVIEW_ROWS)}",
+    #             channel=channel,
+    #             thread_ts=thread_ts,
+    #         )
+    #         _upload_df_csv(
+    #             client=client,
+    #             df=df_csv,
+    #             channel=channel,
+    #             thread_ts=thread_ts,
+    #             filename_prefix="csv_result",
+    #         )
+
+    #     except Exception as e:
+    #         logger.exception("Message handler failed")
+    #         say(text=f"❌ Error: {e}", channel=channel, thread_ts=thread_ts) 
+
+    # return app
+
+
     @app.event("message")
     def on_message(event, say, client, logger):
-        # Ignore bot messages to avoid loops
-        if event.get("bot_id"):
+        # Ignore bot messages / bot loops
+        if event.get("bot_id") or event.get("subtype") == "bot_message":
             return
 
         channel = event.get("channel")
         thread_ts = event.get("ts")
-        text = (event.get("text") or "").strip()
+        user_question = (event.get("text") or "").strip()
 
-        logger.info(f"✅ message event received: {text}")
+        logger.info(f"✅ message event received: {user_question}")
 
-        # If user just says hi, respond with a quick health check
-        if text.lower() in {"hi", "hello", "hey"}:
-            say(text="Hi! I’m alive ✅ Try: `GMV and CM1 by dt for last 7 days`", channel=channel, thread_ts=thread_ts)
+        # ✅ PRE-SQL fallback (intent guardrails)
+        fallback, reason = should_fallback(user_question)
+        if fallback:
+            say(text=SCOPE_FALLBACK_MSG, channel=channel, thread_ts=thread_ts)
             return
 
-        # Optional: treat normal messages like questions (same pipeline as mentions)
+        if not user_question:
+            say(
+                text="Ask me like: `GMV and CM1 by dt for last 7 days`",
+                channel=channel,
+                thread_ts=thread_ts,
+            )
+            return
+
         try:
-            sql = generate_bq_sql(text)
-            summary = summarize_sql_for_user_sqlglot(sql, user_question=text)
+            sql = generate_bq_sql(user_question)
+
+            # ✅ POST-SQL fallback (LLM safety net)
+            if sql_is_invalid_message(sql):
+                say(text=SCOPE_FALLBACK_MSG, channel=channel, thread_ts=thread_ts)
+                return
+
+            summary = summarize_sql_for_user_sqlglot(sql, user_question=user_question)
             say(text=format_sql_summary_for_slack(summary), channel=channel, thread_ts=thread_ts)
+
             df_preview = run_sql_df(sql, max_rows=PREVIEW_ROWS)
             df_csv = run_sql_df(sql, max_rows=CSV_MAX_ROWS)
 
@@ -144,6 +206,7 @@ def build_slack_app(slack_bot_token: str) -> App:
                 channel=channel,
                 thread_ts=thread_ts,
             )
+
             _upload_df_csv(
                 client=client,
                 df=df_csv,
@@ -154,6 +217,4 @@ def build_slack_app(slack_bot_token: str) -> App:
 
         except Exception as e:
             logger.exception("Message handler failed")
-            say(text=f"❌ Error: {e}", channel=channel, thread_ts=thread_ts) 
-
-    return app
+            say(text=f"❌ Error: {e}", channel=channel, thread_ts=thread_ts)
