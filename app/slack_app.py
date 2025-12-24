@@ -157,7 +157,7 @@ def build_slack_app(slack_bot_token: str) -> App:
     #         logger.exception("Message handler failed")
     #         say(text=f"❌ Error: {e}", channel=channel, thread_ts=thread_ts) 
 
-    return app
+    # return app
 
 
     @app.event("message")
