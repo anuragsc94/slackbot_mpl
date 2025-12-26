@@ -1,0 +1,149 @@
+doc_type: PolicyDoc
+version: 1
+domain: "MPL Analytics Text-to-SQL"
+
+description: >
+  This policy governs how the LLM interprets user queries, retrieves context,
+  composes metrics and scopes, and generates SQL. It enforces correctness,
+  prevents hallucination, and ensures alignment with MPL business semantics.
+
+# ==================================================
+# 1. VALID QUERY POLICY
+# ==================================================
+valid_query_rules:
+
+  must_satisfy:
+    - "Query must request a metric, aggregation, ratio, comparison, or trend"
+    - "Query must reference a time range explicitly or implicitly"
+    - "Query must relate to gameplay, revenue, users, wallets, margins, lobbies, games, or geography"
+
+  invalid_behavior:
+    - "Do not generate SQL for greetings, empty prompts, or schema exploration"
+    - "Do not generate SQL for select * or show everything requests"
+    - "Do not guess missing metrics or dimensions"
+
+  invalid_response:
+    text: "Invalid analytics question. Please ask about metrics, time range, and dimensions."
+
+# ==================================================
+# 2. METRIC SELECTION POLICY
+# ==================================================
+metric_policy:
+
+  selection_rules:
+    - "Only metrics defined in MetricCatalog may be used as primitives"
+    - "Derived metrics may be composed ONLY from existing metrics and valid SQL expressions"
+    - "Metrics must not be redefined with different semantics"
+
+  forbidden_behavior:
+    - "Do not invent metric names"
+    - "Do not infer business meaning not present in DomainGlossary"
+    - "Do not override metric definitions based on user phrasing"
+
+# ==================================================
+# 3. SCOPE RESOLUTION POLICY
+# ==================================================
+scope_policy:
+
+  resolution_order:
+    - "Metric-level scopes (scope_refs)"
+    - "User-requested scopes inferred from query"
+    - "Default scopes from MetricCatalog"
+
+  compatibility_rule:
+    - "A scope may be applied ONLY if supported by the target table"
+
+  default_behavior:
+    - "Apply scope_cash_lobby_default unless explicitly overridden"
+    - "Apply scope_gameplay_battles for gameplay metrics"
+
+  override_rules:
+    gold_lobby:
+      triggers: ["gold lobby", "gold game", "gold"]
+      apply_scope: "scope_gold_lobby"
+      remove_scope: "scope_cash_lobby_default"
+
+    all_lobbies:
+      triggers: ["all lobbies", "cash and gold", "overall"]
+      apply_scope: "scope_all_lobbies"
+      remove_scope: "scope_cash_lobby_default"
+
+    free_lobby:
+      triggers: ["free lobby", "zsh", "free gp"]
+      apply_filters:
+        - "is_zsh_lobby = 'true'"
+
+  forbidden_behavior:
+    - "Do not infer ZSH from entry_fee"
+    - "Do not apply lobby_type filters to tables without lobby_type"
+    - "Do not apply transaction_type filter to GM or CM1 metrics"
+
+# ==================================================
+# 4. DOMAIN SEMANTICS POLICY
+# ==================================================
+domain_policy:
+
+  grounding_rules:
+    - "All business terminology must be resolved using DomainGlossary"
+    - "If multiple interpretations exist, prefer glossary-defined hierarchy"
+
+  lobby_hierarchy:
+    - "ZSH is a subtype of CASH lobbies"
+    - "GOLD lobbies are never ZSH"
+    - "CASH includes both ZSH and non-ZSH unless specified"
+
+  cash_lobby_language:
+    - "User phrase 'cash lobby' defaults to non-ZSH CASH gameplay"
+    - "If ambiguity remains, ask for clarification"
+
+# ==================================================
+# 5. SQL GENERATION POLICY
+# ==================================================
+sql_policy:
+
+  dialect: "BigQuery"
+
+  generation_rules:
+    - "Output exactly ONE complete SQL query"
+    - "Do not include explanations or comments"
+    - "Use only tables and columns declared in TableCard"
+    - "Always qualify column names when ambiguous"
+    - "Use dt (DATE) for date filtering unless timestamp explicitly requested"
+    - "Weekly aggregations must start on Monday"
+    - "Always use SAFE_DIVIDE for ratios"
+    - "Round numeric outputs to 2 decimal places"
+    - "Add LIMIT 1000 unless explicitly requested otherwise"
+
+  analytic_rules:
+    - "Never PARTITION BY FLOAT64 columns directly"
+    - "Convert FLOAT64 to STRING before window partitioning"
+
+# ==================================================
+# 6. ERROR HANDLING POLICY
+# ==================================================
+error_policy:
+
+  unsupported_request:
+    - "If requested metric or scope is unsupported, do not guess"
+    - "Respond with a clarification request"
+
+  ambiguous_query:
+    - "If multiple valid interpretations exist, ask a follow-up question"
+    - "Do not silently choose one interpretation"
+
+  safety:
+    - "Never generate invalid SQL"
+    - "Never reference non-existent columns"
+
+# ==================================================
+# 7. OUTPUT POLICY
+# ==================================================
+output_policy:
+
+  format:
+    - "SQL only"
+    - "No markdown"
+    - "No explanations"
+
+  determinism:
+    - "Given the same inputs, output must be stable"

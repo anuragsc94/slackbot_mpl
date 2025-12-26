@@ -1,0 +1,6 @@
+doc_type: ScopeCard
+version: 1
+scope_name: "scope_cash_lobby_default"
+description: "Default scope: restrict metrics to CASH lobbies unless explicitly overridden."
+required_filters:
+  - "lobby_type = 'CASH'"

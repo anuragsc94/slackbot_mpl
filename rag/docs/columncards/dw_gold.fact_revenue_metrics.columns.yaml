@@ -1,0 +1,234 @@
+doc_type: ColumnCard
+version: 1
+table_fqn: "dw_gold.fact_revenue_metrics"
+
+columns:
+  - name: dt
+    type: DATE
+    description: "Event date for the battle/gameplay (use as default time filter)."
+    tags: [time, partition]
+
+  - name: ist_time
+    type: STRING
+    description: "IST timestamp-like field; mixed formats (epoch-ms or formatted timestamp with +0530). Use only when user asks for timestamp behavior."
+    tags: [time]
+
+  - name: user_id
+    type: STRING
+    description: "Unique identifier of the user."
+    tags: [identifier]
+
+  - name: battle_id
+    type: STRING
+    description: "Unique identifier of the battle/gameplay."
+    tags: [identifier]
+
+  - name: app_type
+    type: STRING
+    description: "App context / platform label for the event (e.g., CASH/IOS/NA)."
+    tags: [dimension]
+
+  - name: app_version
+    type: STRING
+    description: "App version code associated with the event."
+    tags: [dimension]
+
+  - name: country_code
+    type: STRING
+    description: "Country code of the user."
+    tags: [dimension, geo]
+
+  - name: game_id
+    type: STRING
+    description: "Identifier of the game played; can be mapped to a human-readable game name."
+    tags: [dimension, game]
+
+  - name: transaction_type
+    type: STRING
+    description: "Classifies the row type (e.g., Gameplay- Battles vs other non-battle gameplay events)."
+    tags: [dimension, scope]
+
+  - name: battle_state
+    type: STRING
+    description: "Lifecycle state of the battle record (e.g., CLOSED)."
+    tags: [dimension]
+
+  - name: lobby_type
+    type: STRING
+    description: "Currency type used for the battle (e.g., CASH, GOLD)."
+    tags: [dimension]
+
+  - name: entry_fee
+    type: FLOAT64
+    description: "Entry fee required to participate in the battle."
+    tags: [measure, money]
+
+  - name: gmv
+    type: FLOAT64
+    description: "Gross amount collected from the battle (before payouts/expenses)."
+    tags: [measure, money]
+
+  - name: winnings
+    type: FLOAT64
+    description: "Total winnings/payout amount attributed to the user for the battle."
+    tags: [measure, money]
+
+  - name: rake_rate
+    type: NUMERIC
+    description: "Rake rate percentage (platform rake) where applicable."
+    tags: [measure, rate]
+
+  - name: mpl_margin
+    type: FLOAT64
+    description: "Theoretical platform margin from the battle."
+    tags: [measure, money]
+
+  - name: te
+    type: FLOAT64
+    description: "Tournament expense attributed to the battle (platform burn for certain battles)."
+    tags: [measure, money, expense]
+
+  - name: iae
+    type: FLOAT64
+    description: "In-app expense attributed to the battle."
+    tags: [measure, money, expense]
+
+  - name: in_bc
+    type: FLOAT64
+    description: "Bonus cash used by the user to enter/play the battle."
+    tags: [measure, money, wallet_input]
+
+  - name: in_wc
+    type: FLOAT64
+    description: "Winning cash used by the user to enter/play the battle."
+    tags: [measure, money, wallet_input]
+
+  - name: in_dc
+    type: FLOAT64
+    description: "Deposit cash used by the user to enter/play the battle."
+    tags: [measure, money, wallet_input]
+
+  - name: in_ticket
+    type: FLOAT64
+    description: "Ticket credits used by the user to enter/play the battle."
+    tags: [measure, wallet_input]
+
+  - name: in_gold
+    type: FLOAT64
+    description: "Gold currency used by the user to enter/play the battle (gold lobbies)."
+    tags: [measure, wallet_input]
+
+  - name: out_bc
+    type: FLOAT64
+    description: "Bonus cash credited/earned by the user from the battle."
+    tags: [measure, money, wallet_output]
+
+  - name: out_wc
+    type: FLOAT64
+    description: "Winning (withdrawable) cash credited/earned by the user from the battle."
+    tags: [measure, money, wallet_output]
+
+  - name: out_dc
+    type: FLOAT64
+    description: "Deposit cash credited/earned by the user from the battle."
+    tags: [measure, money, wallet_output]
+
+  - name: out_ticket
+    type: FLOAT64
+    description: "Ticket credits credited/earned by the user from the battle."
+    tags: [measure, wallet_output]
+
+  - name: out_gold
+    type: FLOAT64
+    description: "Gold currency credited/earned by the user from the battle."
+    tags: [measure, wallet_output]
+
+  - name: is_won
+    type: STRING
+    description: "Outcome flag from user perspective stored as STRING ('true'/'false')."
+    tags: [dimension, flag]
+
+  - name: bc_utilised
+    type: FLOAT64
+    description: "Net bonus cash consumed in the battle."
+    tags: [measure, money]
+
+  - name: tax
+    type: FLOAT64
+    description: "Tax amount attributed to the battle/platform economics."
+    tags: [measure, money]
+
+  - name: gm
+    type: FLOAT64
+    description: "Gross margin attributed to the battle."
+    tags: [measure, money]
+
+  - name: cm1
+    type: FLOAT64
+    description: "Contribution margin attributed to the battle."
+    tags: [measure, money]
+
+  - name: rank1_target_score
+    type: FLOAT64
+    description: "Target score threshold for rank 1 in HOF lobbies."
+    tags: [measure, hof]
+
+  - name: rank1_multiplier
+    type: FLOAT64
+    description: "Multiplier applied when rank 1 target score is met (HOF mechanics)."
+    tags: [measure, hof]
+
+  - name: rank2_target_score
+    type: FLOAT64
+    description: "Target score threshold for rank 2 in HOF lobbies."
+    tags: [measure, hof]
+
+  - name: rank2_multiplier
+    type: FLOAT64
+    description: "Multiplier applied when rank 2 target score is met (HOF mechanics)."
+    tags: [measure, hof]
+
+  - name: rank3_target_score
+    type: FLOAT64
+    description: "Target score threshold for rank 3 in HOF lobbies."
+    tags: [measure, hof]
+
+  - name: rank3_multiplier
+    type: FLOAT64
+    description: "Multiplier applied when rank 3 target score is met (HOF mechanics)."
+    tags: [measure, hof]
+
+  - name: rank
+    type: STRING
+    description: "Rank achieved by the user in HOF battles (stored as STRING)."
+    tags: [dimension, hof]
+
+  - name: score
+    type: STRING
+    description: "Score achieved by the user in HOF battles (stored as STRING; numeric-like)."
+    tags: [dimension, hof]
+
+  - name: is_zsh_lobby
+    type: STRING
+    description: "Free/zero-entry lobby indicator stored as STRING ('true'/'false')."
+    tags: [dimension, flag]
+
+  - name: is_hof_battle
+    type: STRING
+    description: "HOF battle indicator stored as STRING ('true'/'false')."
+    tags: [dimension, flag, hof]
+
+  - name: skill_score
+    type: NUMERIC
+    description: "Skill score associated with the user."
+    tags: [measure]
+
+  - name: hof_default_data
+    type: STRING
+    description: "HOF-related system/default flag (dataset-specific)."
+    tags: [dimension, hof]
+
+  - name: bet_deduction
+    type: STRING
+    description: "JSON-like payload describing bet deduction breakdown; parse only if explicitly asked."
+    tags: [semi_structured]

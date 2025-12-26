@@ -1,0 +1,6 @@
+doc_type: ScopeCard
+version: 1
+scope_name: "scope_zsh_lobby"
+description: "Free / ZSH gameplay within CASH lobbies"
+required_filters:
+  - "is_zsh_lobby = 'true'"

@@ -1,0 +1,42 @@
+doc_type: DimensionCard
+version: 1
+dimension_name: "game_name"
+
+base_column: "game_id"
+scope: "global"
+
+description: "Human-readable game name derived from game_id. Applies to any table containing game_id."
+
+mapping_type: "static_case_expression"
+
+mapping:
+  "1002044": "Win Patti Skill"
+  "1002099": "Bingo Skill"
+  "1000295": "Solitaire"
+  "1000220": "Gin Rummy"
+  "1002100": "Draw 4"
+  "1000243": "Ultra Ludo"
+  "1002053": "Snakes & Ladders"
+  "1000235": "Spades"
+  "1000240": "Brick Blast"
+  "1003002": "Survivor"
+  "1003011": "Pool Server"
+
+fallback: "game_id"
+
+sql_rendering:
+  bigquery: >
+    CASE
+      WHEN game_id = '1002044' THEN 'Win Patti Skill'
+      WHEN game_id = '1002099' THEN 'Bingo Skill'
+      WHEN game_id = '1000295' THEN 'Solitaire'
+      WHEN game_id = '1000220' THEN 'Gin Rummy'
+      WHEN game_id = '1002100' THEN 'Draw 4'
+      WHEN game_id = '1000243' THEN 'Ultra Ludo'
+      WHEN game_id = '1002053' THEN 'Snakes & Ladders'
+      WHEN game_id = '1000235' THEN 'Spades'
+      WHEN game_id = '1000240' THEN 'Brick Blast'
+      WHEN game_id = '1003002' THEN 'Survivor'
+      WHEN game_id = '1003011' THEN 'Pool Server'
+      ELSE game_id
+    END

@@ -1,0 +1,5 @@
+doc_type: ScopeCard
+version: 1
+scope_name: "scope_none"
+description: "No additional scoping constraints."
+required_filters: []

@@ -1,0 +1,332 @@
+doc_type: MetricCatalog
+version: 2
+default_timezone: "Asia/Kolkata"
+
+default_scopes:
+  - "scopecards/scope_cash_lobby_default.yaml"
+
+metrics:
+
+  # -------------------------
+  # Core activity (Gameplay)
+  # -------------------------
+  - metric_key: "transactions"
+    label: "Transactions (Gameplay Battles)"
+    aliases: ["txns", "transaction", "transactions", "gameplays", "gp", "gps", "battles", "battle_count"]
+    unit: "count"
+    agg: "count_rows"
+    expression: "COUNT(*)"
+    scope_refs:
+      - "scopecards/scope_gameplay_battles.yaml"
+
+  - metric_key: "users"
+    label: "Users (Gameplay Battles)"
+    aliases: ["users", "active users", "au", "unique users", "distinct users"]
+    unit: "users"
+    agg: "count_distinct"
+    expression: "COUNT(DISTINCT user_id)"
+    scope_refs:
+      - "scopecards/scope_gameplay_battles.yaml"
+
+  # -------------------------
+  # Money metrics
+  # -------------------------
+  - metric_key: "gmv"
+    label: "GMV"
+    aliases: ["gmv", "gross merchandise value", "amount collected", "collection"]
+    unit: "currency"
+    agg: "sum"
+    expression: "SUM(gmv)"
+    scope_refs:
+      - "scopecards/scope_gameplay_battles.yaml"
+
+  - metric_key: "winnings"
+    label: "Winnings"
+    aliases: ["winnings", "payout", "payouts"]
+    unit: "currency"
+    agg: "sum"
+    expression: "SUM(winnings)"
+    scope_refs:
+      - "scopecards/scope_gameplay_battles.yaml"
+
+  - metric_key: "mpl_margin"
+    label: "MPL Margin"
+    aliases: ["mpl margin", "margin"]
+    unit: "currency"
+    agg: "sum"
+    expression: "SUM(mpl_margin)"
+    scope_refs:
+      - "scopecards/scope_gameplay_battles.yaml"
+
+  - metric_key: "te"
+    label: "TE (Tournament Expense)"
+    aliases: ["te", "tournament expense", "tournament burn"]
+    unit: "currency"
+    agg: "sum"
+    expression: "SUM(te)"
+    scope_refs:
+      - "scopecards/scope_gameplay_battles.yaml"
+
+  - metric_key: "iae"
+    label: "IAE (In-App Expense)"
+    aliases: ["iae", "in app expense", "in-app expense"]
+    unit: "currency"
+    agg: "sum"
+    expression: "SUM(iae)"
+    scope_refs:
+      - "scopecards/scope_gameplay_battles.yaml"
+
+  - metric_key: "tax"
+    label: "Tax"
+    aliases: ["tax", "taxes"]
+    unit: "currency"
+    agg: "sum"
+    expression: "SUM(tax)"
+    scope_refs:
+      - "scopecards/scope_none.yaml"
+
+  # -------------------------
+  # Derived margin metrics
+  # IMPORTANT: transaction_type filter must NOT be forced
+  # -------------------------
+  - metric_key: "gm"
+    label: "GM (Gross Margin)"
+    aliases: ["gm", "gross margin"]
+    unit: "currency"
+    agg: "sum"
+    expression: "SUM(gm)"
+    scope_refs:
+      - "scopecards/scope_no_transaction_type_filter.yaml"
+
+  - metric_key: "cm1"
+    label: "CM1 (Contribution Margin)"
+    aliases: ["cm1", "contribution margin"]
+    unit: "currency"
+    agg: "sum"
+    expression: "SUM(cm1)"
+    scope_refs:
+      - "scopecards/scope_no_transaction_type_filter.yaml"
+
+  # -------------------------
+  # Wallet utilisation
+  # -------------------------
+  - metric_key: "bc_utilised"
+    label: "Bonus Cash Utilised"
+    aliases: ["bc utilised", "bonus utilised", "bonus burn", "bonus cash utilised"]
+    unit: "currency"
+    agg: "sum"
+    expression: "SUM(bc_utilised)"
+    scope_refs:
+      - "scopecards/scope_gameplay_battles.yaml"
+
+  - metric_key: "dc_utilised"
+    label: "Deposit Cash Utilised"
+    aliases: ["dc utilised", "deposit utilised", "deposit cash utilised"]
+    unit: "currency"
+    agg: "sum"
+    expression: "SUM(in_dc)"
+    scope_refs:
+      - "scopecards/scope_gameplay_battles.yaml"
+
+  - metric_key: "wc_utilised"
+    label: "Winning Cash Utilised"
+    aliases: ["wc utilised", "winning utilised", "winning cash utilised"]
+    unit: "currency"
+    agg: "sum"
+    expression: "SUM(in_wc)"
+    scope_refs:
+      - "scopecards/scope_gameplay_battles.yaml"
+
+# -------------------------
+#Wallet outputs (money earned)
+# -------------------------
+
+  - metric_key: "bonus_cash_earned"
+    label: "Bonus Cash Earned"
+    aliases: ["bonus earned", "bonus payout", "out bc"]
+    unit: "currency"
+    agg: "sum"
+    expression: "SUM(out_bc)"
+    scope_refs:
+      - "scopecards/scope_gameplay_battles.yaml"
+
+  - metric_key: "winning_cash_earned"
+    label: "Winning Cash Earned"
+    aliases: ["winning cash earned", "real cash earned", "out wc"]
+    unit: "currency"
+    agg: "sum"
+    expression: "SUM(out_wc)"
+    scope_refs:
+      - "scopecards/scope_gameplay_battles.yaml"
+
+  - metric_key: "deposit_cash_earned"
+    label: "Deposit Cash Earned"
+    aliases: ["deposit earned", "out dc"]
+    unit: "currency"
+    agg: "sum"
+    expression: "SUM(out_dc)"
+    scope_refs:
+      - "scopecards/scope_gameplay_battles.yaml"
+
+  - metric_key: "gold_earned"
+    label: "Gold Earned"
+    aliases: ["gold earned", "out gold"]
+    unit: "currency"
+    agg: "sum"
+    expression: "SUM(out_gold)"
+    scope_refs:
+      - "scopecards/scope_gameplay_battles.yaml"
+
+  - metric_key: "ticket_earned"
+    label: "Ticket Earned"
+    aliases: ["ticket earned", "out ticket"]
+    unit: "currency"
+    agg: "sum"
+    expression: "SUM(out_ticket)"
+    scope_refs:
+      - "scopecards/scope_gameplay_battles.yaml"
+
+  # -------------------------
+  # Ratios
+  # -------------------------
+  - metric_key: "win_rate"
+    label: "Win Rate"
+    aliases: ["win rate", "wr"]
+    unit: "ratio"
+    agg: "ratio"
+    expression: "SAFE_DIVIDE(COUNTIF(is_won = 'true'), COUNT(*))"
+    scope_refs:
+      - "scopecards/scope_gameplay_battles.yaml"
+
+  - metric_key: "rtp"
+    label: "RTP"
+    aliases: ["rtp", "return to player"]
+    unit: "ratio"
+    agg: "ratio"
+    expression: "SAFE_DIVIDE(SUM(winnings), SUM(gmv))"
+    scope_refs:
+      - "scopecards/scope_gameplay_battles.yaml"
+
+  # -------------------------
+  # Per-user metrics
+  # -------------------------
+  - metric_key: "gmvpu"
+    label: "GMV per User"
+    aliases: ["gmvpu", "gmv per user"]
+    unit: "currency_per_user"
+    agg: "per_user"
+    expression: "SAFE_DIVIDE(SUM(gmv), COUNT(DISTINCT user_id))"
+    scope_refs:
+      - "scopecards/scope_gameplay_battles.yaml"
+
+  - metric_key: "marginpu"
+    label: "Margin per User"
+    aliases: ["marginpu", "margin per user", "mpl margin per user"]
+    unit: "currency_per_user"
+    agg: "per_user"
+    expression: "SAFE_DIVIDE(SUM(mpl_margin), COUNT(DISTINCT user_id))"
+    scope_refs:
+      - "scopecards/scope_gameplay_battles.yaml"
+
+  - metric_key: "cm1pu"
+    label: "CM1 per User"
+    aliases: ["cm1pu", "cm1 per user"]
+    unit: "currency_per_user"
+    agg: "per_user"
+    expression: "SAFE_DIVIDE(SUM(cm1), COUNT(DISTINCT user_id))"
+    scope_refs:
+      - "scopecards/scope_no_transaction_type_filter.yaml"
+
+
+  - metric_key: "bcpu"
+    label: "Bonus Cash Utilised per User"
+    aliases:
+      [
+        "bcpu",
+        "bonus cash per user",
+        "bonus per user",
+        "bc per user"
+      ]
+    unit: "currency_per_user"
+    agg: "per_user"
+    expression: "SAFE_DIVIDE(SUM(in_bc), COUNT(DISTINCT user_id))"
+    scope_refs:
+      - "scopecards/scope_gameplay_battles.yaml"
+    
+  - metric_key: "dcpu"
+    label: "Deposit Cash Utilised per User"
+    aliases:
+      [
+        "dcpu",
+        "deposit cash per user",
+        "deposit per user",
+        "dc per user"
+      ]
+    unit: "currency_per_user"
+    agg: "per_user"
+    expression: "SAFE_DIVIDE(SUM(in_dc), COUNT(DISTINCT user_id))"
+    scope_refs:
+      - "scopecards/scope_gameplay_battles.yaml"
+
+  - metric_key: "wcpu"
+    label: "Winning Cash Utilised per User"
+    aliases:
+      [
+        "wcpu",
+        "winning cash per user",
+        "winnings per user",
+        "wc per user"
+      ]
+    unit: "currency_per_user"
+    agg: "per_user"
+    expression: "SAFE_DIVIDE(SUM(in_wc), COUNT(DISTINCT user_id))"
+    scope_refs:
+      - "scopecards/scope_gameplay_battles.yaml"
+
+
+  - metric_key: "gpu"
+    label: "Gameplays per User"
+    aliases:
+      [
+        "gpu",
+        "gameplay per user",
+        "gameplays per user",
+        "gp per user",
+        "battles per user"
+      ]
+    unit: "count_per_user"
+    agg: "per_user"
+    expression: "SAFE_DIVIDE(COUNT(*), COUNT(DISTINCT user_id))"
+    scope_refs:
+      - "scopecards/scope_gameplay_battles.yaml"
+    
+
+  # -------------------------
+  # HOF targets (example showing multi-scope)
+  # -------------------------
+  - metric_key: "rank1_target_score"
+    label: "Rank 1 Target Score"
+    aliases: ["rank1 target", "rank 1 target", "r1 target"]
+    unit: "score"
+    agg: "avg"
+    expression: "AVG(rank1_target_score)"
+    scope_refs:
+      - "scopecards/scope_hof_only.yaml"
+
+  - metric_key: "rank2_target_score"
+    label: "Rank 2 Target Score"
+    aliases: ["rank2 target", "rank 2 target", "r2 target"]
+    unit: "score"
+    agg: "avg"
+    expression: "AVG(rank2_target_score)"
+    scope_refs:
+      - "scopecards/scope_hof_only.yaml"
+
+  - metric_key: "rank3_target_score"
+    label: "Rank 3 Target Score"
+    aliases: ["rank3 target", "rank 3 target", "r3 target"]
+    unit: "score"
+    agg: "avg"
+    expression: "AVG(rank3_target_score)"
+    scope_refs:
+      - "scopecards/scope_hof_only.yaml"

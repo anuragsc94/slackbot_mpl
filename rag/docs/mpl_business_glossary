@@ -1,0 +1,256 @@
+doc_type: mpl_business_glossary
+version: 3
+domain: "MPL Battle, Lobby, Wallet & Revenue Semantics"
+
+description: >
+  This glossary defines MPL-specific business terminology and maps user-facing
+  language to schema-level concepts. It captures the correct hierarchy and
+  semantics of lobby types, free (ZSH) gameplay, wallet usage, and platform
+  economics. This document is table-agnostic and is intended to ground
+  text-to-SQL generation.
+
+sections:
+
+  # ==================================================
+  # Lobby & Battle Classification
+  # ==================================================
+  - section_key: "lobby_classification"
+    title: "Lobby Types and Free (ZSH) Classification"
+    description: >
+      MPL lobbies are primarily classified by currency system using lobby_type.
+      Free (ZSH) lobbies are a subtype that exists only within CASH lobbies.
+
+    entries:
+      - term: "Cash Lobby"
+        aliases: ["cash lobby", "cash game"]
+        definition: >
+          A lobby where the entry fee is collected by MPL and funded using
+          cash-based wallets such as Deposit Cash, Bonus Cash, or Winning Cash.
+          CASH lobbies may be either free (ZSH) or paid (non-ZSH).
+        schema_mapping:
+          column: "lobby_type"
+          value: "CASH"
+
+      - term: "Gold Lobby"
+        aliases: ["gold lobby", "gold game"]
+        definition: >
+          A lobby where entry fees and winnings are entirely in gold currency.
+          Gold lobbies are always paid and are never free (ZSH).
+        schema_mapping:
+          column: "lobby_type"
+          value: "GOLD"
+
+      - term: "Free Lobby (ZSH)"
+        aliases: ["free lobby", "zsh lobby", "zero entry lobby", "free gp"]
+        definition: >
+          A promotional free lobby that exists only within CASH lobbies.
+          Users do not meaningfully pay to play. If the user wins, winnings
+          are credited as winning cash.
+          ZSH classification is determined strictly by is_zsh_lobby = true
+          and MUST NOT be inferred from entry_fee.
+        constraints:
+          parent_lobby_type: "CASH"
+        schema_mapping:
+          column: "is_zsh_lobby"
+          value: "true"
+
+      - term: "Paid Cash Lobby (Non-ZSH)"
+        aliases:
+          ["paid cash lobby", "cash lobby", "paid lobby", "lobby amount", "cash gp"]
+        definition: >
+          A CASH lobby where the user pays a non-zero entry fee.
+          In common user language, this is what is most often meant by
+          "cash lobby".
+        constraints:
+          lobby_type: "CASH"
+          is_zsh_lobby: "false"
+        schema_mapping:
+          columns:
+            - "lobby_type"
+            - "is_zsh_lobby"
+            - "entry_fee"
+
+      - term: "Gameplay Battle"
+        aliases: ["gameplay", "battle", "gp", "gameplay battle"]
+        definition: >
+          A real gameplay event where a user participates in a battle.
+          Only these rows should be used for gameplay, user, and revenue metrics.
+        schema_mapping:
+          column: "transaction_type"
+          value: "Gameplay- Battles"
+
+  # ==================================================
+  # Hall of Fame (HOF) Battles
+  # ==================================================
+  - section_key: "hof_battles"
+    title: "Hall of Fame (HOF) Battles"
+
+    entries:
+      - term: "HOF Battle"
+        aliases: ["hof battle", "hof lobby", "hall of fame"]
+        definition: >
+          A special competitive lobby where users are ranked based on score.
+          Rewards are determined by rank-based target scores and multipliers.
+        schema_mapping:
+          column: "is_hof_battle"
+          value: "true"
+
+
+  # ==================================================
+  # Wallet System — Inputs (Entry Funding)
+  # ==================================================
+  - section_key: "wallet_inputs"
+    title: "Wallets Used to Enter Battles"
+
+    entries:
+      - term: "Entry Fee (Lobby Amount)"
+        aliases: ["entry fee", "lobby amount", "fees"]
+        definition: >
+          The amount collected by MPL for entering a battle.
+          Entry fee is applicable only for paid lobbies and is independent
+          of wallet composition.
+        schema_mapping:
+          column: "entry_fee"
+
+      - term: "Deposit Cash (DC)"
+        aliases: ["deposit cash", "deposit"]
+        definition: >
+          Non-withdrawable cash credited by MPL that can be used only for gameplay.
+        schema_mapping:
+          column: "in_dc"
+
+      - term: "Bonus Cash (BC)"
+        aliases: ["bonus cash", "bonus"]
+        definition: >
+          Promotional wallet credit given by the platform.
+          Used for entry but not withdrawable.
+        schema_mapping:
+          columns: ["in_bc", "bc_utilised"]
+
+      - term: "Winning Cash (WC)"
+        aliases: ["winning cash", "winnings used"]
+        definition: >
+          Withdrawable cash earned from previous wins and reused for entry.
+        schema_mapping:
+          column: "in_wc"
+
+      - term: "Ticket"
+        aliases: ["ticket", "entry ticket"]
+        definition: >
+          Special credits that can be used to enter certain battles.
+        schema_mapping:
+          column: "in_ticket"
+
+      - term: "Gold Currency (Input)"
+        aliases: ["gold used"]
+        definition: >
+          Virtual currency used exclusively to enter gold lobbies.
+        schema_mapping:
+          column: "in_gold"
+
+  # ==================================================
+  # Wallet System — Outputs (Payouts)
+  # ==================================================
+  - section_key: "wallet_outputs"
+    title: "Wallets Earned After Battles"
+
+    entries:
+      - term: "Winning Cash Earned"
+        aliases: ["cash won", "wc earned"]
+        definition: >
+          Withdrawable cash credited to the user after winning a battle.
+          This includes winnings from ZSH and paid CASH lobbies.
+        schema_mapping:
+          column: "out_wc"
+
+      - term: "Bonus Cash Earned"
+        aliases: ["bonus earned"]
+        definition: >
+          Promotional bonus credited after winning certain battles.
+        schema_mapping:
+          column: "out_bc"
+
+      - term: "Deposit Cash Earned"
+        aliases: ["deposit earned"]
+        definition: >
+          Non-withdrawable deposit cash credited after winning.
+        schema_mapping:
+          column: "out_dc"
+
+      - term: "Gold Earned"
+        aliases: ["gold won"]
+        definition: >
+          Gold currency credited after winning a gold lobby battle.
+        schema_mapping:
+          column: "out_gold"
+
+  # ==================================================
+  # Platform Economics & Margins
+  # ==================================================
+  - section_key: "platform_economics"
+    title: "Platform Revenue & Margin Definitions"
+
+    entries:
+      - term: "MPL Margin"
+        aliases: ["mpl margin", "platform margin"]
+        definition: >
+          Theoretical margin earned by the platform before expenses.
+        schema_mapping:
+          column: "mpl_margin"
+
+      - term: "Tournament Expense (TE)"
+        aliases: ["te", "tournament expense"]
+        definition: >
+          Expense incurred by the platform for running tournaments
+          or cross-lobby battles.
+        schema_mapping:
+          column: "te"
+
+      - term: "In-App Expense (IAE)"
+        aliases: ["iae", "in app expense"]
+        definition: >
+          In-app operational expenses incurred by the platform.
+        schema_mapping:
+          column: "iae"
+
+      - term: "Gross Margin (GM)"
+        aliases: ["gm", "gross margin"]
+        definition: >
+          GM = MPL Margin - TE - IAE - Bonus Cash Utilised.
+        schema_mapping:
+          column: "gm"
+
+      - term: "Contribution Margin (CM1)"
+        aliases: ["cm1", "contribution margin"]
+        definition: >
+          CM1 = Gross Margin - Tax.
+        schema_mapping:
+          column: "cm1"
+
+      - term: "Tax"
+        aliases: ["tax"]
+        definition: >
+          Tax incurred by the platform on MPL margin.
+        schema_mapping:
+          column: "tax"
+
+  # ==================================================
+  # Ranking & Scoring (HOF)
+  # ==================================================
+  - section_key: "ranking_system"
+    title: "Rank and Scoring System"
+
+    entries:
+      - term: "Score"
+        aliases: ["score"]
+        definition: >
+          Score achieved by a user in a Hall-of-Fame battle.
+        schema_mapping:
+          column: "score"
+
+      - term: "Rank"
+        aliases: ["rank"]
+        definition: >
+          Final position achieved by a user in a Hall-of-Fame battle.
+        schema_mapping:
+          column: "rank"

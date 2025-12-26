@@ -1,0 +1,28 @@
+doc_type: DimensionCard
+version: 1
+dimension_name: "app_platform"
+
+base_column: "app_type"
+scope: "global"
+
+description: "Normalized platform derived from app_type. Applies to any table containing app_type."
+
+normalization:
+  required: true
+  expression: "LOWER(app_type)"
+
+mapping_type: "static_case_expression"
+
+mapping:
+  "cash": "Android"
+  "ios": "iOS"
+
+fallback: "app_type"
+
+sql_rendering:
+  bigquery: >
+    CASE
+      WHEN LOWER(app_type) = 'cash' THEN 'Android'
+      WHEN LOWER(app_type) = 'ios' THEN 'iOS'
+      ELSE app_type
+    END

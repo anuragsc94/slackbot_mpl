@@ -1,0 +1,6 @@
+doc_type: ScopeCard
+version: 1
+scope_name: "scope_gold_lobby"
+description: "Restrict metrics to GOLD lobbies only."
+required_filters:
+  - "lobby_type = 'GOLD'"

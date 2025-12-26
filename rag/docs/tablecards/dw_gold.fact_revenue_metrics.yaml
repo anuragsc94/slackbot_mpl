@@ -1,0 +1,96 @@
+doc_type: TableCard
+version: 1
+table_fqn: "dw_gold.fact_revenue_metrics"
+timezone: "Asia/Kolkata"
+
+grain:
+  description: "One row per user participation in a gameplay/battle-related event"
+  candidate_keys:
+    - dt
+    - battle_id
+    - user_id
+    - transaction_type
+
+time:
+  date_column: "dt"
+  timestamp_column: "ist_time"
+  partition_column: "dt"
+
+identifiers:
+  - { name: "battle_id", type: "STRING" }
+  - { name: "user_id", type: "STRING" }
+
+
+dimensions:
+  - { name: "dt", type: "DATE" }
+  - { name: "country_code", type: "STRING" }
+  - { name: "game_id", type: "STRING" }
+  - { name: "transaction_type", type: "STRING" }
+  - { name: "battle_state", type: "STRING" }
+  - { name: "lobby_type", type: "STRING" }
+  - { name: "app_type", type: "STRING" }
+  - { name: "app_version", type: "STRING" }
+  - { name: "is_won", type: "STRING" }
+  - { name: "is_zsh_lobby", type: "STRING" }
+  - { name: "is_hof_battle", type: "STRING" }
+  - { name: "hof_default_data", type: "STRING" }
+  - { name: "rank", type: "STRING" }
+  - { name: "score", type: "STRING" }
+
+measures:
+  float64:
+    - entry_fee
+    - gmv
+    - winnings
+    - mpl_margin
+    - te
+    - iae
+    - in_bc
+    - in_wc
+    - in_dc
+    - in_ticket
+    - in_gold
+    - out_bc
+    - out_wc
+    - out_dc
+    - out_ticket
+    - out_gold
+    - bc_utilised
+    - tax
+    - gm
+    - cm1
+    - rank1_target_score
+    - rank1_multiplier
+    - rank2_target_score
+    - rank2_multiplier
+    - rank3_target_score
+    - rank3_multiplier
+
+  numeric:
+    - rake_rate
+    - skill_score
+
+semi_structured:
+  - { name: "bet_deduction", type: "STRING" }
+
+type_gotchas:
+  - { column: "is_won", stored_as: "STRING", allowed_values: ["true", "false"] }
+  - { column: "is_zsh_lobby", stored_as: "STRING", allowed_values: ["true", "false"] }
+  - { column: "is_hof_battle", stored_as: "STRING", allowed_values: ["true", "false"] }
+  - { column: "score", stored_as: "STRING", note: "Numeric-looking but STRING" }
+  - { column: "ist_time", stored_as: "STRING", note: "Mixed epoch-ms and formatted timestamp" }
+
+
+derived_dimensions:
+  - name: "game_name"
+    depends_on: ["game_id"]
+
+
+supported_scopes:
+  - "scope_cash_lobby_default"
+  - "scope_gold_lobby"
+  - "scope_all_lobbies"
+  - "scope_gameplay_battles"
+  - "scope_hof_only"
+  - "scope_no_transaction_type_filter"
+

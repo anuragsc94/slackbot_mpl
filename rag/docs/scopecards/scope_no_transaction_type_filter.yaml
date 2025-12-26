@@ -1,0 +1,6 @@
+doc_type: ScopeCard
+version: 1
+scope_name: "scope_no_transaction_type_filter"
+description: "transaction_type filter must NOT be applied for these metrics."
+forbidden_filters:
+  - "transaction_type"

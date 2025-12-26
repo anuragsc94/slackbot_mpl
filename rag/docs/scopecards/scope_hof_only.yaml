@@ -1,0 +1,6 @@
+doc_type: ScopeCard
+version: 1
+scope_name: "scope_hof_only"
+description: "Restrict to HOF battles only."
+required_filters:
+  - "is_hof_battle = 'true'"
