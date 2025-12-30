@@ -1,7 +1,5 @@
 import os
 import re
-import io
-import csv
 import tempfile
 import logging
 from typing import Optional
@@ -15,7 +13,7 @@ from app.bq import run_sql_df
 from app.sql_summary import summarize_sql_for_user_sqlglot, format_sql_summary_for_slack
 from app.scope_fallback import should_fallback, SCOPE_FALLBACK_MSG
 
-# ✅ NEW: RAG + SQL orchestrator
+# ✅ RAG + SQL orchestrator
 from app.query_orchestrator import handle_query_with_rag
 
 
@@ -26,7 +24,7 @@ PREVIEW_ROWS = int(os.getenv("PREVIEW_ROWS", "20"))
 
 
 # ---------------------------------------------------------------------
-# Utility helpers (UNCHANGED)
+# Utility helpers
 # ---------------------------------------------------------------------
 
 def _strip_mention(text: str) -> str:
@@ -50,7 +48,6 @@ def _upload_df_csv(
     thread_ts: Optional[str],
     filename_prefix: str = "result",
 ) -> None:
-    """Upload dataframe as CSV into Slack thread."""
     if df is None or df.empty:
         return
 
@@ -81,25 +78,24 @@ def build_slack_app(slack_bot_token: str) -> App:
     app = App(token=slack_bot_token)
 
     # ================================================================
-    # APP MENTION HANDLER  (@bot ...)
+    # APP MENTION HANDLER (@bot ...)
     # ================================================================
     @app.event("app_mention")
     def on_mention(event, say, client, logger):
         channel = event.get("channel")
         thread_ts = event.get("ts")
-        user_question = _strip_mention(event.get("text"))
 
-        logger.info(f"📩 app_mention received: {user_question}")
+        User_question_on_slack = _strip_mention(event.get("text"))
 
-        # ----------------------------
-        # Pre-SQL fallback (existing)
-        # ----------------------------
-        fallback, _ = should_fallback(user_question)
+        logger.info(f"📩 app_mention received: {User_question_on_slack}")
+
+        # Pre-SQL fallback (UNCHANGED)
+        fallback, _ = should_fallback(User_question_on_slack)
         if fallback:
             say(text=SCOPE_FALLBACK_MSG, channel=channel, thread_ts=thread_ts)
             return
 
-        if not user_question:
+        if not User_question_on_slack:
             say(
                 text="Ask me like: `@bot GMV and CM1 by dt for last 7 days`",
                 channel=channel,
@@ -108,25 +104,29 @@ def build_slack_app(slack_bot_token: str) -> App:
             return
 
         try:
-            # ======================================================
-            # ✅ RAG + SQL via orchestrator (NEW, minimal change)
-            # ======================================================
-            ok, sql, err = handle_query_with_rag(user_question)
+            ok, sql, err = handle_query_with_rag(User_question_on_slack)
 
             if not ok:
                 say(text=err, channel=channel, thread_ts=thread_ts)
                 return
 
-            # ----------------------------
-            # Existing downstream logic
-            # ----------------------------
-            summary = summarize_sql_for_user_sqlglot(sql, user_question=user_question)
-            say(text=format_sql_summary_for_slack(summary), channel=channel, thread_ts=thread_ts)
+            summary = summarize_sql_for_user_sqlglot(
+                sql, user_question=User_question_on_slack
+            )
+            say(
+                text=format_sql_summary_for_slack(summary),
+                channel=channel,
+                thread_ts=thread_ts,
+            )
 
             df_preview = run_sql_df(sql, max_rows=PREVIEW_ROWS)
             df_csv = run_sql_df(sql, max_rows=CSV_MAX_ROWS)
 
-            say(text=f"*Generated SQL:*\n```{sql}```", channel=channel, thread_ts=thread_ts)
+            say(
+                text=f"*Generated SQL:*\n```{sql}```",
+                channel=channel,
+                thread_ts=thread_ts,
+            )
 
             say(
                 text=f"*Preview (top {PREVIEW_ROWS} rows):*\n"
@@ -149,22 +149,21 @@ def build_slack_app(slack_bot_token: str) -> App:
 
     # ================================================================
     # MESSAGE HANDLER (non-mention messages)
-    # (LEFT UNCHANGED ON PURPOSE)
     # ================================================================
     @app.event("message")
     def on_message(event, say, client, logger):
-        # Ignore bot messages to avoid loops
         if event.get("bot_id"):
             return
 
         channel = event.get("channel")
         thread_ts = event.get("ts")
-        text = (event.get("text") or "").strip()
 
-        logger.info(f"✅ message event received: {text}")
+        User_question_on_slack = (event.get("text") or "").strip()
 
-        # Simple greeting response
-        if text.lower() in {"hi", "hello", "hey"}:
+        logger.info(f"✅ message event received: {User_question_on_slack}")
+
+        # Simple greeting response (UNCHANGED behavior)
+        if User_question_on_slack.lower() in {"hi", "hello", "hey"}:
             say(
                 text="Hi! I’m alive ✅ Try: `GMV and CM1 by dt for last 7 days`",
                 channel=channel,
@@ -172,26 +171,31 @@ def build_slack_app(slack_bot_token: str) -> App:
             )
             return
 
-        # NOTE:
-        # For now, non-mentions follow the OLD flow (no RAG).
-        # This is intentional to keep changes minimal.
         try:
-            # ======================================================
-            # ✅ RAG + SQL via orchestrator (NEW, minimal change)
-            # ======================================================
-            ok, sql, err = handle_query_with_rag(user_question)
+            ok, sql, err = handle_query_with_rag(User_question_on_slack)
 
             if not ok:
                 say(text=err, channel=channel, thread_ts=thread_ts)
                 return
 
-            summary = summarize_sql_for_user_sqlglot(sql, user_question=text)
-            say(text=format_sql_summary_for_slack(summary), channel=channel, thread_ts=thread_ts)
+            summary = summarize_sql_for_user_sqlglot(
+                sql, user_question=User_question_on_slack
+            )
+            say(
+                text=format_sql_summary_for_slack(summary),
+                channel=channel,
+                thread_ts=thread_ts,
+            )
 
             df_preview = run_sql_df(sql, max_rows=PREVIEW_ROWS)
             df_csv = run_sql_df(sql, max_rows=CSV_MAX_ROWS)
 
-            say(text=f"*Generated SQL:*\n```{sql}```", channel=channel, thread_ts=thread_ts)
+            say(
+                text=f"*Generated SQL:*\n```{sql}```",
+                channel=channel,
+                thread_ts=thread_ts,
+            )
+
             say(
                 text=f"*Preview (top {PREVIEW_ROWS} rows):*\n"
                      f"{_df_to_slack_table(df_preview, max_rows=PREVIEW_ROWS)}",
