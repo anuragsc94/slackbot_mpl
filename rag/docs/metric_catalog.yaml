@@ -21,7 +21,7 @@ metrics:
 
   - metric_key: "users"
     label: "Users (Gameplay Battles)"
-    aliases: ["users", "active users", "au", "unique users", "distinct users"]
+    aliases: ["users", "active users", "au", "unique users", "distinct users","PDAU"]
     unit: "users"
     agg: "count_distinct"
     expression: "COUNT(DISTINCT user_id)"
