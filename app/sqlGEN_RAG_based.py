@@ -42,7 +42,6 @@ If the question is unclear, empty, or not analytics-related:
 # ------------------------------------------------------------------
 # PROMPT BUILDER — RAG CONTEXT IS ADDED HERE
 # ------------------------------------------------------------------
-
 def _build_prompt(user_query: str, retrieved_chunks: List[Dict]) -> str:
     context_blocks: List[str] = []
 
@@ -62,7 +61,8 @@ chunk_type: {chunk_type}
 """
         )
 
-    retrieved_text = "\n".join(context_blocks)  # ✅ compute outside f-string
+    # 🚨 IMPORTANT: join happens OUTSIDE the f-string
+    retrieved_text = "\n".join(context_blocks)
 
     return f"""{SYSTEM_PROMPT}
 
@@ -75,6 +75,7 @@ chunk_type: {chunk_type}
 # Task
 Generate the correct BigQuery SQL query.
 """
+
 
 
 # ------------------------------------------------------------------
