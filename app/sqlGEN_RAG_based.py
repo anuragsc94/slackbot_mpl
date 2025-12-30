@@ -43,26 +43,31 @@ If the question is unclear, empty, or not analytics-related:
 # PROMPT BUILDER — RAG CONTEXT IS ADDED HERE
 # ------------------------------------------------------------------
 
-def _build_prompt(
-    user_query: str,
-    retrieved_chunks: List[Dict],
-) -> str:
-    context_blocks = []
+def _build_prompt(user_query: str, retrieved_chunks: List[Dict]) -> str:
+    context_blocks: List[str] = []
+
     for i, chunk in enumerate(retrieved_chunks, start=1):
+        source = chunk.get("source", "")
+        doc_type = chunk.get("doc_type", "")
+        chunk_type = chunk.get("chunk_type", "")
+        content = chunk.get("content", "")
+
         context_blocks.append(
             f"""--- Context {i} ---
-source: {chunk.get("source")}
-doc_type: {chunk.get("doc_type")}
-chunk_type: {chunk.get("chunk_type")}
+source: {source}
+doc_type: {doc_type}
+chunk_type: {chunk_type}
 
-{chunk.get("content")}
+{content}
 """
         )
+
+    retrieved_text = "\n".join(context_blocks)  # ✅ compute outside f-string
 
     return f"""{SYSTEM_PROMPT}
 
 # Retrieved Knowledge (YAML)
-{'\n'.join(context_blocks)}
+{retrieved_text}
 
 # User Question
 {user_query}
@@ -76,10 +81,7 @@ Generate the correct BigQuery SQL query.
 # FINAL PUBLIC FUNCTION — QUERY_ORCHESTRATOR CALLS THIS
 # ------------------------------------------------------------------
 
-def generate_bq_sql(
-    user_query: str,
-    retrieved_chunks: List[Dict],
-) -> str:
+def generate_bq_sql(user_query: str, retrieved_chunks: List[Dict]) -> str:
     prompt = _build_prompt(user_query, retrieved_chunks)
 
     response = client.models.generate_content(
