@@ -17,3 +17,6 @@ numpy<2
 pandas>=2.0,<2.3
 pyarrow>=12,<15
 numexpr>=2.8,<2.11
+
+grpcio>=1.60,<2
+grpcio-status>=1.60,<2
