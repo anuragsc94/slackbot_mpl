@@ -386,7 +386,10 @@ def build_chroma() -> None:
     print("📁 RAG_DOCS_DIR:", RAG_DOCS_DIR)
     print("📄 YAML files:", len(files))
 
-    embeddings = GoogleGenerativeAIEmbeddings(model=GEMINI_EMBED_MODEL)
+    embeddings = GoogleGenerativeAIEmbeddings(
+    model=GEMINI_EMBED_MODEL,
+    api_key=os.environ["GOOGLE_API_KEY"],)
+
 
     # Fresh rebuild to avoid duplicates
     if CHROMA_DIR.exists():
