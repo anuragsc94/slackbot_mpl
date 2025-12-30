@@ -86,7 +86,6 @@ def build_slack_app(slack_bot_token: str) -> App:
         thread_ts = event.get("ts")
 
         User_question_on_slack = _strip_mention(event.get("text"))
-
         logger.info(f"📩 app_mention received: {User_question_on_slack}")
 
         # Pre-SQL fallback (UNCHANGED)
@@ -158,8 +157,7 @@ def build_slack_app(slack_bot_token: str) -> App:
         channel = event.get("channel")
         thread_ts = event.get("ts")
 
-        User_question_on_slack = (event.get("text") or "").strip()
-
+        User_question_on_slack = _strip_mention(event.get("text"))
         logger.info(f"✅ message event received: {User_question_on_slack}")
 
         # Simple greeting response (UNCHANGED behavior)
