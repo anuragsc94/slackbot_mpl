@@ -175,7 +175,7 @@ def build_slack_app(slack_bot_token: str) -> App:
         # NOTE:
         # For now, non-mentions follow the OLD flow (no RAG).
         # This is intentional to keep changes minimal.
-         try:
+        try:
             # ======================================================
             # ✅ RAG + SQL via orchestrator (NEW, minimal change)
             # ======================================================
