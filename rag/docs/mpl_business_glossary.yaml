@@ -49,26 +49,10 @@ sections:
           ZSH classification is determined strictly by is_zsh_lobby = true
           and MUST NOT be inferred from entry_fee.
         constraints:
-          parent_lobby_type: "CASH"
+          lobby_type: "CASH"
         schema_mapping:
           column: "is_zsh_lobby"
           value: "true"
-
-      - term: "Paid Cash Lobby (Non-ZSH)"
-        aliases:
-          ["paid cash lobby", "cash lobby", "paid lobby", "lobby amount", "cash gp"]
-        definition: >
-          A CASH lobby where the user pays a non-zero entry fee.
-          In common user language, this is what is most often meant by
-          "cash lobby".
-        constraints:
-          lobby_type: "CASH"
-          is_zsh_lobby: "false"
-        schema_mapping:
-          columns:
-            - "lobby_type"
-            - "is_zsh_lobby"
-            - "entry_fee"
 
       - term: "Gameplay Battle"
         aliases: ["gameplay", "battle", "gp", "gameplay battle"]

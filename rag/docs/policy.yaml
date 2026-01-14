@@ -31,6 +31,7 @@ valid_query_rules:
 metric_policy:
 
   selection_rules:
+    - "columns to be fetched from name of the column from ColumnCard"
     - "Only metrics defined in MetricCatalog may be used as primitives"
     - "Derived metrics may be composed ONLY from existing metrics and valid SQL expressions"
     - "Metrics must not be redefined with different semantics"

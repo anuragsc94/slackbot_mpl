@@ -9,20 +9,16 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import yaml
 from langchain_core.documents import Document
-
-# Keep your existing Chroma import (will show deprecation warning, but works).
-# Optional upgrade shown at end.
 from langchain_community.vectorstores import Chroma
-
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 
 # -----------------------------
 # Config
 # -----------------------------
-RAG_DIR = Path(__file__).resolve().parent                  # .../slackbot_mpl/rag
-RAG_DOCS_DIR = RAG_DIR / "docs"                            # .../slackbot_mpl/rag/docs
-CHROMA_DIR = RAG_DIR / "vector_db_chroma"                  # .../slackbot_mpl/rag/vector_db_chroma
+RAG_DIR = Path(__file__).resolve().parent
+RAG_DOCS_DIR = RAG_DIR  # YAMLs are directly in rag/ folder
+CHROMA_DIR = RAG_DIR / "vector_db_chroma"
 COLLECTION_NAME = "mpl_yaml_docs"
 GEMINI_EMBED_MODEL = "text-embedding-004"
 
@@ -40,7 +36,6 @@ def read_text(path: Path) -> str:
 
 
 def try_parse_yaml(text: str) -> Optional[Any]:
-    # "validation skipped": we attempt parse; if it fails we fallback to raw
     try:
         return yaml.safe_load(text)
     except Exception:
@@ -61,7 +56,7 @@ def sanitize_metadata(meta: Dict[str, Any]) -> Dict[str, Any]:
         if v is None or isinstance(v, (str, int, float, bool)):
             clean[k] = v
         elif isinstance(v, (list, dict)):
-            clean[k] = dump_yaml(v)  # YAML string, not JSON
+            clean[k] = dump_yaml(v)
         else:
             clean[k] = str(v)
     return clean
@@ -72,22 +67,36 @@ def make_doc(text: str, meta: Dict[str, Any]) -> Document:
 
 
 # -----------------------------
-# Chunking rules (matches your YAML schema)
+# Semantic formatting helpers
+# -----------------------------
+def format_list(items: List[str], prefix: str = "") -> str:
+    if not items:
+        return "None"
+    if len(items) == 1:
+        return f"{prefix}{items[0]}"
+    if len(items) == 2:
+        return f"{prefix}{items[0]} and {items[1]}"
+    return f"{prefix}{', '.join(items[:-1])}, and {items[-1]}"
+
+
+def make_searchable_aliases(aliases: List[str]) -> str:
+    if not aliases:
+        return ""
+    return f"Also known as: {', '.join(aliases)}. User might ask for: {' or '.join(aliases)}."
+
+
+# -----------------------------
+# Chunking rules
 # -----------------------------
 def split_cards(parsed: Any, rel_path: str, raw_text: str) -> Tuple[List[Document], List[str]]:
-    """
-    Convert one YAML file into 1..N Documents, with deterministic IDs.
-    """
     docs: List[Document] = []
     ids: List[str] = []
 
-    # Base metadata for every chunk from this file
     base_meta = {
         "source": rel_path,
         "file_name": os.path.basename(rel_path),
     }
 
-    # If YAML parse failed -> raw chunk
     if parsed is None or not isinstance(parsed, dict):
         text = f"""RAW_DOC
 source: {rel_path}
@@ -109,15 +118,24 @@ content: |
     if dtype == "ColumnCard":
         table_fqn = parsed.get("table_fqn")
         columns = parsed.get("columns", []) or []
+
         for col in columns:
             col_name = (col or {}).get("name")
-            text = f"""doc_type: ColumnCard
-version: {version}
-source: {rel_path}
-table_fqn: {table_fqn}
-column_name: {col_name}
+            col_type = (col or {}).get("type", "")
+            col_desc = (col or {}).get("description", "")
+            col_tags = (col or {}).get("tags", [])
 
-column:
+            tags_str = format_list(col_tags, "")
+
+            text = f"""Column: {col_name}
+Table: {table_fqn}
+Data Type: {col_type}
+
+Description: {col_desc}
+
+Tags: {tags_str}
+
+Technical Details:
 {dump_yaml(col)}
 """
             meta = {
@@ -126,7 +144,8 @@ column:
                 "chunk_type": "column",
                 "table_fqn": table_fqn,
                 "column_name": col_name,
-                "tags": (col or {}).get("tags", []),   # will be sanitized to YAML string
+                "column_type": col_type,
+                "tags": col_tags,
             }
             _id = stable_id(rel_path, "column", str(table_fqn), str(col_name))
             docs.append(make_doc(text, meta))
@@ -139,25 +158,19 @@ column:
     if dtype == "DimensionCard":
         dim = parsed.get("dimension_name")
         base_col = parsed.get("base_column")
-        text = f"""doc_type: DimensionCard
-version: {version}
-source: {rel_path}
-dimension_name: {dim}
-base_column: {base_col}
-scope: {parsed.get("scope")}
+        desc = parsed.get("description", "")
+        mapping = parsed.get("mapping", {}) or {}
+        mapping_values = list(mapping.values()) if mapping else []
 
-description: {parsed.get("description")}
+        text = f"""Dimension: {dim}
+Base Column: {base_col}
+Scope: {parsed.get("scope", "global")}
 
-normalization:
-{dump_yaml(parsed.get("normalization", {}))}
+Description: {desc}
 
-mapping_type: {parsed.get("mapping_type")}
-mapping:
-{dump_yaml(parsed.get("mapping", {}))}
+Mapped values include: {format_list(mapping_values)}
 
-fallback: {parsed.get("fallback")}
-
-sql_rendering:
+SQL Rendering:
 {dump_yaml(parsed.get("sql_rendering", {}))}
 """
         meta = {
@@ -176,26 +189,27 @@ sql_rendering:
     # -------------------------
     if dtype == "ScopeCard":
         scope = parsed.get("scope_name")
-        text = f"""doc_type: ScopeCard
-version: {version}
-source: {rel_path}
-scope_name: {scope}
+        desc = parsed.get("description", "")
+        required = parsed.get("required_filters", []) or []
+        forbidden = parsed.get("forbidden_filters", []) or []
 
-description: {parsed.get("description")}
+        text = f"""Scope: {scope}
 
-required_filters:
-{dump_yaml(parsed.get("required_filters", []))}
+Description: {desc}
 
-forbidden_filters:
-{dump_yaml(parsed.get("forbidden_filters", []))}
+Required Filters:
+{dump_yaml(required)}
+
+Forbidden Filters:
+{dump_yaml(forbidden)}
 """
         meta = {
             **base_meta,
             "doc_type": "ScopeCard",
             "chunk_type": "scope",
             "scope_name": scope,
-            "required_filters": parsed.get("required_filters", []),   # sanitized
-            "forbidden_filters": parsed.get("forbidden_filters", []), # sanitized
+            "required_filters": required,
+            "forbidden_filters": forbidden,
         }
         _id = stable_id(rel_path, "scope", str(scope))
         return [make_doc(text, meta)], [_id]
@@ -205,42 +219,20 @@ forbidden_filters:
     # -------------------------
     if dtype == "TableCard":
         table_fqn = parsed.get("table_fqn")
-        text = f"""doc_type: TableCard
-version: {version}
-source: {rel_path}
-table_fqn: {table_fqn}
-timezone: {parsed.get("timezone")}
 
-grain:
-{dump_yaml(parsed.get("grain", {}))}
+        text = f"""Table: {table_fqn}
 
-time:
-{dump_yaml(parsed.get("time", {}))}
+Timezone: {parsed.get("timezone", "UTC")}
 
-identifiers:
-{dump_yaml(parsed.get("identifiers", []))}
-
-dimensions:
-{dump_yaml(parsed.get("dimensions", []))}
-
-measures:
-{dump_yaml(parsed.get("measures", {}))}
-
-derived_dimensions:
-{dump_yaml(parsed.get("derived_dimensions", []))}
-
-supported_scopes:
-{dump_yaml(parsed.get("supported_scopes", []))}
-
-type_gotchas:
-{dump_yaml(parsed.get("type_gotchas", []))}
+Technical Details:
+{dump_yaml(parsed)}
 """
         meta = {
             **base_meta,
             "doc_type": "TableCard",
             "chunk_type": "table",
             "table_fqn": table_fqn,
-            "supported_scopes": parsed.get("supported_scopes", []),  # sanitized
+            "supported_scopes": parsed.get("supported_scopes", []) or [],
         }
         _id = stable_id(rel_path, "table", str(table_fqn))
         return [make_doc(text, meta)], [_id]
@@ -249,17 +241,17 @@ type_gotchas:
     # MetricCatalog: 1 per metric (+ header)
     # -------------------------
     if dtype == "MetricCatalog":
-        header = {
-            "doc_type": "MetricCatalog",
-            "version": version,
-            "default_timezone": parsed.get("default_timezone"),
-            "default_scopes": parsed.get("default_scopes", []),
-        }
-        header_text = f"""doc_type: MetricCatalog
-chunk_type: header
-source: {rel_path}
+        default_scopes = parsed.get("default_scopes", []) or []
+        header_text = f"""Metric Catalog Header
+Default Timezone: {parsed.get("default_timezone")}
+Default Scopes: {format_list(default_scopes)}
 
-{dump_yaml(header)}
+{dump_yaml({
+    "doc_type": "MetricCatalog",
+    "version": version,
+    "default_timezone": parsed.get("default_timezone"),
+    "default_scopes": default_scopes,
+})}
 """
         header_meta = {**base_meta, "doc_type": "MetricCatalog", "chunk_type": "metric_catalog_header"}
         header_id = stable_id(rel_path, "metric_catalog_header")
@@ -268,12 +260,26 @@ source: {rel_path}
 
         for m in parsed.get("metrics", []) or []:
             mk = (m or {}).get("metric_key")
-            text = f"""doc_type: MetricCatalog
-chunk_type: metric
-source: {rel_path}
-metric_key: {mk}
+            label = (m or {}).get("label", "")
+            aliases = (m or {}).get("aliases", []) or []
+            expression = (m or {}).get("expression", "")
+            unit = (m or {}).get("unit", "")
+            agg = (m or {}).get("agg", "")
+            scope_refs = (m or {}).get("scope_refs", []) or []
 
-metric:
+            aliases_text = make_searchable_aliases(aliases)
+
+            text = f"""Metric: {mk}
+Label: {label}
+
+{aliases_text}
+
+SQL Expression: {expression}
+Aggregation: {agg}
+Unit: {unit}
+Scope Refs: {format_list(scope_refs)}
+
+Technical Details:
 {dump_yaml(m)}
 """
             meta = {
@@ -281,8 +287,12 @@ metric:
                 "doc_type": "MetricCatalog",
                 "chunk_type": "metric",
                 "metric_key": mk,
-                "aliases": (m or {}).get("aliases", []),       # sanitized
-                "scope_refs": (m or {}).get("scope_refs", []), # sanitized
+                "label": label,
+                "aliases": aliases,
+                "scope_refs": scope_refs,
+                "expression": expression,
+                "unit": unit,
+                "agg": agg,
             }
             _id = stable_id(rel_path, "metric", str(mk))
             docs.append(make_doc(text, meta))
@@ -296,19 +306,32 @@ metric:
     if dtype == "mpl_business_glossary":
         domain = parsed.get("domain")
         sections = parsed.get("sections", []) or []
+
         for sec in sections:
             sec_key = (sec or {}).get("section_key")
+            sec_title = (sec or {}).get("title", "")
             entries = (sec or {}).get("entries", []) or []
+
             for e in entries:
                 term = (e or {}).get("term")
-                text = f"""doc_type: mpl_business_glossary
-version: {version}
-source: {rel_path}
-domain: {domain}
-section_key: {sec_key}
-term: {term}
+                aliases = (e or {}).get("aliases", []) or []
+                definition = (e or {}).get("definition", "")
+                schema_mapping = (e or {}).get("schema_mapping", {}) or {}
 
-entry:
+                aliases_text = make_searchable_aliases(aliases)
+
+                text = f"""Business Term: {term}
+Category: {sec_title}
+Domain: {domain}
+
+{aliases_text}
+
+Definition: {definition}
+
+Schema Mapping:
+{dump_yaml(schema_mapping)}
+
+Full Entry:
 {dump_yaml(e)}
 """
                 meta = {
@@ -318,7 +341,7 @@ entry:
                     "domain": domain,
                     "section_key": sec_key,
                     "term": term,
-                    "aliases": (e or {}).get("aliases", []),  # sanitized
+                    "aliases": aliases,
                 }
                 _id = stable_id(rel_path, "glossary", str(sec_key), str(term))
                 docs.append(make_doc(text, meta))
@@ -326,20 +349,41 @@ entry:
         return docs, ids
 
     # -------------------------
-    # PolicyDoc: 1 per top-level policy section
+    # PolicyDoc: ✅ add MASTER + 1 per section
     # -------------------------
     if dtype == "PolicyDoc":
         domain = parsed.get("domain")
+
+        # ✅ MASTER rulebook chunk (binding)
+        master_text = f"""Policy Rulebook (MASTER)
+Domain: {domain}
+
+This is the authoritative, binding rulebook for SQL generation.
+If any conflict exists, follow PolicyDoc.
+
+Full PolicyDoc:
+{dump_yaml(parsed)}
+"""
+        master_meta = {
+            **base_meta,
+            "doc_type": "PolicyDoc",
+            "chunk_type": "policy_master",
+            "domain": domain,
+            "policy_section": "MASTER",
+        }
+        master_id = stable_id(rel_path, "policy", "MASTER")
+        docs.append(make_doc(master_text, master_meta))
+        ids.append(master_id)
+
+        # Existing: 1 per top-level policy section
         for k, v in parsed.items():
             if k in ("doc_type", "version", "domain", "description"):
                 continue
-            text = f"""doc_type: PolicyDoc
-version: {version}
-source: {rel_path}
-domain: {domain}
-policy_section: {k}
 
-section:
+            text = f"""Policy: {k}
+Domain: {domain}
+
+Policy Details:
 {dump_yaml(v)}
 """
             meta = {
@@ -352,6 +396,7 @@ section:
             _id = stable_id(rel_path, "policy", str(k))
             docs.append(make_doc(text, meta))
             ids.append(_id)
+
         return docs, ids
 
     # -------------------------
@@ -372,7 +417,6 @@ content:
 def load_yaml_files() -> List[Path]:
     if not RAG_DOCS_DIR.exists():
         raise RuntimeError(f"Docs directory does not exist: {RAG_DOCS_DIR}")
-
     yaml_files = list(RAG_DOCS_DIR.rglob("*.yaml")) + list(RAG_DOCS_DIR.rglob("*.yml"))
     return sorted(set(yaml_files))
 
@@ -382,14 +426,10 @@ def build_chroma() -> None:
     if not files:
         raise RuntimeError(f"No YAML files found under {RAG_DOCS_DIR}")
 
-    # Debug prints (helpful)
     print("📁 RAG_DOCS_DIR:", RAG_DOCS_DIR)
     print("📄 YAML files:", len(files))
 
-    embeddings = GoogleGenerativeAIEmbeddings(
-    model=GEMINI_EMBED_MODEL,
-    api_key=os.environ["GOOGLE_API_KEY"],)
-
+    embeddings = GoogleGenerativeAIEmbeddings(model=GEMINI_EMBED_MODEL)
 
     # Fresh rebuild to avoid duplicates
     if CHROMA_DIR.exists():
@@ -401,7 +441,7 @@ def build_chroma() -> None:
     ids_all: List[str] = []
 
     for fp in files:
-        rel_path = str(fp.relative_to(RAG_DIR)).replace("\\", "/")  # docs/... path
+        rel_path = str(fp.relative_to(RAG_DIR)).replace("\\", "/")
         raw = read_text(fp)
         parsed = try_parse_yaml(raw)
         docs, ids = split_cards(parsed, rel_path, raw)
