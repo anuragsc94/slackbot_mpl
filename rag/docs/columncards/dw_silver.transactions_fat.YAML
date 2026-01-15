@@ -1,0 +1,163 @@
+doc_type: ColumnCard
+version: 1
+table_fqn: "dw_silver.transactions_fat"
+
+columns:
+  - name: id
+    type: INT64
+    description: "Unique identifier of the wallet transaction event."
+    tags: [identifier]
+
+  - name: user_id
+    type: STRING
+    description: "Unique identifier of the user."
+    tags: [identifier]
+
+  - name: amount
+    type: FLOAT64
+    description: "Transaction amount in base currency (see money_type / local_currency fields for context)."
+    tags: [measure, money]
+
+  - name: country_code
+    type: STRING
+    description: "Country code associated with the transaction (may be overridden by injected_country_code for enriched records)."
+    tags: [dimension, geo]
+
+  - name: created_at
+    type: NUMERIC
+    description: "Epoch milliseconds when the event was created (stored as NUMERIC)."
+    tags: [time]
+
+  - name: description
+    type: STRING
+    description: "Free-text description of the transaction (battle/winnings/deposit/withdrawal context)."
+    tags: [dimension]
+
+  - name: money_type
+    type: STRING
+    description: "Wallet bucket involved in the transaction (e.g., Gold, Deposit, Ticket, Winning, Transit, Bonus)."
+    tags: [dimension, wallet]
+
+  - name: local_currency
+    type: STRING
+    description: "Local currency code for the transaction (e.g., USD, NGN, BRL)."
+    tags: [dimension]
+
+  - name: local_currency_value
+    type: FLOAT64
+    description: "Transaction amount in local currency units."
+    tags: [measure, money]
+
+  - name: reference_id
+    type: STRING
+    description: "Reference identifier connecting the transaction to a business event (battle/payment/refund/etc.)."
+    tags: [identifier]
+
+  - name: reference_type
+    type: STRING
+    description: "Type of reference event (e.g., BATTLE_DEBIT, SPADES_DEBIT, GAME_REFUND, BANK_TRANSFER, etc.)."
+    tags: [dimension]
+
+  - name: transaction_category
+    type: STRING
+    description: "High-level transaction category (e.g., DEPOSIT, WITHDRAWAL, COLLECTION_C, WINNING_C, REFUND_C, etc.)."
+    tags: [dimension, category]
+
+  - name: transaction_tag
+    type: STRING
+    description: "Transaction tagging/grouping label (e.g., PAYMENTS_T, BATTLE_T, COUPONS_T, etc.)."
+    tags: [dimension, category]
+
+  - name: transaction_type
+    type: STRING
+    description: "Transaction direction type (CREDIT or DEBIT)."
+    tags: [dimension]
+
+  - name: extra_info
+    type: STRING
+    description: "JSON-like extra metadata (parse only when explicitly requested)."
+    tags: [semi_structured]
+
+  - name: idempotency_key
+    type: STRING
+    description: "Idempotency key used to deduplicate/identify repeated transaction requests."
+    tags: [identifier]
+
+  - name: peg_rate
+    type: STRING
+    description: "Peg conversion rate indicator (often '1'); treat as STRING."
+    tags: [dimension]
+
+  - name: request_id
+    type: STRING
+    description: "Request identifier for the service event that produced this transaction."
+    tags: [identifier]
+
+  - name: t1_id
+    type: STRING
+    description: "Tier-1 identifier used by upstream systems (often user/profile/game identifiers depending on source)."
+    tags: [dimension]
+
+  - name: t2_id
+    type: STRING
+    description: "Tier-2 identifier used by upstream systems (often transaction/payment identifiers depending on source)."
+    tags: [dimension]
+
+  - name: t3_id
+    type: STRING
+    description: "Tier-3 identifier used by upstream systems (often battle/round identifiers depending on source)."
+    tags: [dimension]
+
+  - name: ist_time
+    type: STRING
+    description: "IST timestamp-like string (formatted with +0530). Use for timestamp behavior only; dt is preferred for date filtering."
+    tags: [time]
+
+  - name: __deleted
+    type: STRING
+    description: "Soft-delete marker stored as STRING ('true'/'false')."
+    tags: [dimension, flag]
+
+  - name: audit_inserted_by
+    type: STRING
+    description: "Ingestion source marker (e.g., 'realtime')."
+    tags: [dimension, audit]
+
+  - name: audit_inserted_at
+    type: STRING
+    description: "Audit insertion timestamp string (ingestion time)."
+    tags: [time, audit]
+
+  - name: ts_epoch_seconds
+    type: INT64
+    description: "Event timestamp in epoch seconds (UTC-aligned source)."
+    tags: [time]
+
+  - name: ts
+    type: STRING
+    description: "UTC timestamp-like string (formatted with +0000)."
+    tags: [time]
+
+  - name: dt
+    type: DATE
+    description: "Date partition for transaction (preferred for date filtering)."
+    tags: [time, partition]
+
+  - name: injected_app_type
+    type: STRING
+    description: "Injected/enriched app type (e.g., CASH, IOS, PLAY_STORE, GLOBAL_F2P, etc.)."
+    tags: [dimension]
+
+  - name: injected_country_code
+    type: STRING
+    description: "Injected/enriched country code (preferred over country_code when present)."
+    tags: [dimension, geo]
+
+  - name: injected_profile_tier
+    type: STRING
+    description: "Injected/enriched profile tier (e.g., Bronze, Silver, Gold, Platinum, etc.)."
+    tags: [dimension]
+
+  - name: injected_language_code
+    type: STRING
+    description: "Injected/enric

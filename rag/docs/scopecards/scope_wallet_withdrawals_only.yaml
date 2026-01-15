@@ -1,0 +1,8 @@
+doc_type: ScopeCard
+version: 1
+scope_name: "scope_wallet_withdrawals_only"
+description: "Withdrawals debited from Winning wallet."
+required_filters:
+  - "LOWER(transaction_category) = 'withdrawal'"
+  - "LOWER(transaction_type) = 'debit'"
+  - "LOWER(money_type) = 'winning'"

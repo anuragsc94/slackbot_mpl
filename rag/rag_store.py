@@ -1,9 +1,8 @@
 # rag/rag_store.py
-
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Set
 
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_chroma import Chroma
@@ -25,6 +24,9 @@ def get_vectorstore() -> Chroma:
 
 def _get_chunk_identity(metadata: dict, content: str) -> tuple:
     if metadata.get("metric_key"):
+        # include table_fqn if present to avoid collisions across tables
+        if metadata.get("table_fqn"):
+            return ("metric", metadata["metric_key"], metadata["table_fqn"])
         return ("metric", metadata["metric_key"])
 
     if metadata.get("column_name") and metadata.get("table_fqn"):
@@ -119,10 +121,12 @@ def _ensure_mandatory_coverage(
 ) -> List[Dict[str, Any]]:
     doc_types_present = {item["doc_type"] for item in merged}
 
+    # ✅ ColumnCard added as mandatory
     mandatory_types = {
         "MetricCatalog",
         "mpl_business_glossary",
         "TableCard",
+        "ColumnCard",
     }
     missing_types = mandatory_types - doc_types_present
 
@@ -162,6 +166,9 @@ def _ensure_mandatory_coverage(
                     "scope_refs": doc.metadata.get("scope_refs"),
                     "required_filters": doc.metadata.get("required_filters"),
                     "forbidden_filters": doc.metadata.get("forbidden_filters"),
+                    "supported_scopes": doc.metadata.get("supported_scopes"),
+                    "column_type": doc.metadata.get("column_type"),
+                    "tags": doc.metadata.get("tags"),
                 }
             })
 
@@ -184,12 +191,10 @@ def _extract_scope_names(scope_refs: Any) -> List[str]:
     if isinstance(scope_refs, list):
         refs = [r for r in scope_refs if isinstance(r, str)]
     elif isinstance(scope_refs, str):
-        # parse lines that look like yaml list items or plain paths
         for line in scope_refs.splitlines():
             line = line.strip()
             if not line:
                 continue
-            # remove leading "- "
             if line.startswith("-"):
                 line = line.lstrip("-").strip()
             refs.append(line)
@@ -206,7 +211,6 @@ def _extract_scope_names(scope_refs: Any) -> List[str]:
         if last:
             scope_names.append(last)
 
-    # dedupe but keep order
     seen = set()
     out = []
     for s in scope_names:
@@ -215,6 +219,129 @@ def _extract_scope_names(scope_refs: Any) -> List[str]:
         seen.add(s)
         out.append(s)
     return out
+
+
+def _parse_supported_scopes(value: Any) -> List[str]:
+    """
+    supported_scopes can be stored as list or YAML string due to metadata sanitization.
+    Return list of scope_name strings.
+    """
+    if not value:
+        return []
+    if isinstance(value, list):
+        return [x for x in value if isinstance(x, str)]
+    if isinstance(value, str):
+        out = []
+        for line in value.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith("-"):
+                line = line.lstrip("-").strip()
+            out.append(line)
+        return out
+    return []
+
+
+def _target_tables_from_metrics(merged: List[Dict[str, Any]]) -> Set[str]:
+    tables = set()
+    for item in merged:
+        if item.get("doc_type") != "MetricCatalog":
+            continue
+        tf = item.get("metadata", {}).get("table_fqn")
+        if tf:
+            tables.add(tf)
+    return tables
+
+
+def _ensure_table_coverage_for_selected_metrics(
+    db: Chroma,
+    merged: List[Dict[str, Any]],
+    seen_keys: set,
+) -> List[Dict[str, Any]]:
+    target_tables = _target_tables_from_metrics(merged)
+    if not target_tables:
+        return merged
+
+    present_tables = {
+        item.get("metadata", {}).get("table_fqn")
+        for item in merged
+        if item.get("doc_type") == "TableCard"
+    }
+    missing_tables = target_tables - present_tables
+    if not missing_tables:
+        return merged
+
+    for table_fqn in missing_tables:
+        try:
+            docs = db.similarity_search(
+                table_fqn,
+                k=2,
+                filter={"doc_type": "TableCard", "table_fqn": table_fqn},
+            )
+        except Exception:
+            docs = db.similarity_search(f"TableCard {table_fqn}", k=6)
+
+        for doc in docs:
+            key = _get_chunk_identity(doc.metadata, doc.page_content)
+            if key in seen_keys:
+                continue
+            seen_keys.add(key)
+            merged.append({
+                "source": doc.metadata.get("source"),
+                "doc_type": "TableCard",
+                "chunk_type": doc.metadata.get("chunk_type"),
+                "content": doc.page_content,
+                "metadata": {
+                    "table_fqn": doc.metadata.get("table_fqn"),
+                    "supported_scopes": doc.metadata.get("supported_scopes"),
+                }
+            })
+
+    return merged
+
+
+def _ensure_column_coverage_for_target_tables(
+    db: Chroma,
+    merged: List[Dict[str, Any]],
+    seen_keys: set,
+    query: str,
+    per_table_k: int = 8,
+) -> List[Dict[str, Any]]:
+    target_tables = _target_tables_from_metrics(merged)
+    if not target_tables:
+        return merged
+
+    # inject columns relevant to the query for each target table
+    for table_fqn in target_tables:
+        try:
+            docs = db.similarity_search(
+                query,
+                k=per_table_k,
+                filter={"doc_type": "ColumnCard", "table_fqn": table_fqn},
+            )
+        except Exception:
+            docs = db.similarity_search(f"{table_fqn} {query}", k=per_table_k)
+
+        for doc in docs:
+            key = _get_chunk_identity(doc.metadata, doc.page_content)
+            if key in seen_keys:
+                continue
+            seen_keys.add(key)
+            merged.append({
+                "source": doc.metadata.get("source"),
+                "doc_type": "ColumnCard",
+                "chunk_type": doc.metadata.get("chunk_type"),
+                "content": doc.page_content,
+                "metadata": {
+                    "table_fqn": doc.metadata.get("table_fqn"),
+                    "column_name": doc.metadata.get("column_name"),
+                    "column_type": doc.metadata.get("column_type"),
+                    "tags": doc.metadata.get("tags"),
+                }
+            })
+
+    return merged
 
 
 def _ensure_metric_scope_coverage(
@@ -258,7 +385,7 @@ def _ensure_metric_scope_coverage(
                 filter={"doc_type": "ScopeCard", "scope_name": scope_name},
             )
         except Exception:
-            docs = db.similarity_search(scope_name, k=2)
+            docs = db.similarity_search(scope_name, k=4)
 
         for doc in docs:
             key = _get_chunk_identity(doc.metadata, doc.page_content)
@@ -295,7 +422,6 @@ def _prune_unreferenced_scopes(merged: List[Dict[str, Any]]) -> List[Dict[str, A
             referenced.add(scope_name)
 
     if not referenced:
-        # if no metric scopes referenced, then no ScopeCards should be present
         return [x for x in merged if x.get("doc_type") != "ScopeCard"]
 
     pruned: List[Dict[str, Any]] = []
@@ -305,6 +431,44 @@ def _prune_unreferenced_scopes(merged: List[Dict[str, Any]]) -> List[Dict[str, A
             continue
         sname = item.get("metadata", {}).get("scope_name")
         if sname in referenced:
+            pruned.append(item)
+
+    return pruned
+
+
+def _prune_scopes_not_supported_by_table(merged: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Additional safety:
+      - Keep ONLY scopes that are supported by the TableCard(s) for the metric's target table_fqn.
+      - If multiple target tables exist, allow scopes supported by ANY of them (conservative).
+    """
+    # table_fqn -> supported_scopes
+    table_supported = {}
+    for item in merged:
+        if item.get("doc_type") != "TableCard":
+            continue
+        tf = item.get("metadata", {}).get("table_fqn")
+        ss = _parse_supported_scopes(item.get("metadata", {}).get("supported_scopes"))
+        if tf:
+            table_supported[tf] = set(ss)
+
+    target_tables = _target_tables_from_metrics(merged)
+    if not target_tables or not table_supported:
+        return merged
+
+    allowed_scopes = set()
+    for tf in target_tables:
+        allowed_scopes |= table_supported.get(tf, set())
+
+    pruned = []
+    for item in merged:
+        if item.get("doc_type") != "ScopeCard":
+            pruned.append(item)
+            continue
+        sname = item.get("metadata", {}).get("scope_name")
+        if not sname:
+            continue
+        if sname in allowed_scopes:
             pruned.append(item)
 
     return pruned
@@ -352,16 +516,28 @@ def retrieve_context(query: str, k: int = 10) -> List[Dict[str, Any]]:
                     "scope_refs": doc.metadata.get("scope_refs"),
                     "required_filters": doc.metadata.get("required_filters"),
                     "forbidden_filters": doc.metadata.get("forbidden_filters"),
+                    "supported_scopes": doc.metadata.get("supported_scopes"),
+                    "column_type": doc.metadata.get("column_type"),
+                    "tags": doc.metadata.get("tags"),
                 }
             })
 
     merged = _ensure_mandatory_coverage(db, merged, seen_keys, query, per_type_k=3)
 
-    # ✅ ADD: ensure scope cards for any metric scope_refs
+    # ✅ NEW: ensure TableCard for any retrieved metric.table_fqn
+    merged = _ensure_table_coverage_for_selected_metrics(db, merged, seen_keys)
+
+    # ✅ NEW: ensure ColumnCards for the target tables
+    merged = _ensure_column_coverage_for_target_tables(db, merged, seen_keys, query, per_table_k=8)
+
+    # ✅ existing: ensure scope cards for any metric scope_refs
     merged = _ensure_metric_scope_coverage(db, merged, seen_keys)
 
-    # ✅ ADD: enforce "no other scope cards allowed"
+    # ✅ existing: enforce "no other scope cards allowed"
     merged = _prune_unreferenced_scopes(merged)
+
+    # ✅ NEW: prune scopes not supported by the target table(s)
+    merged = _prune_scopes_not_supported_by_table(merged)
 
     policy_rulebook = fetch_policy_rulebook(db)
     final = policy_rulebook + merged

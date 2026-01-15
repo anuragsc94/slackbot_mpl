@@ -105,6 +105,9 @@ sql_policy:
   dialect: "BigQuery"
 
   generation_rules:
+
+    - "Use FROM `<metric.table_fqn>` for the selected metric"
+    - "Use only columns declared in the ColumnCard for `<metric.table_fqn>`"
     - "Output exactly ONE complete SQL query"
     - "Do not include explanations or comments"
     - "Use only tables and columns declared in TableCard"

@@ -1,0 +1,5 @@
+doc_type: ScopeCard
+version: 1
+scope_name: "scope_wallet_all_transactions"
+description: "All wallet transactions (no category filter)."
+required_filters: []

@@ -16,6 +16,7 @@ metrics:
     unit: "count"
     agg: "count_rows"
     expression: "COUNT(*)"
+    table_fqn: "dw_gold.fact_revenue_metrics"          
     scope_refs:
       - "scopecards/scope_gameplay_battles.yaml"
 
@@ -25,6 +26,7 @@ metrics:
     unit: "users"
     agg: "count_distinct"
     expression: "COUNT(DISTINCT user_id)"
+    table_fqn: "dw_gold.fact_revenue_metrics"          
     scope_refs:
       - "scopecards/scope_gameplay_battles.yaml"
 
@@ -37,6 +39,7 @@ metrics:
     unit: "currency"
     agg: "sum"
     expression: "SUM(gmv)"
+    table_fqn: "dw_gold.fact_revenue_metrics"        
     scope_refs:
       - "scopecards/scope_gameplay_battles.yaml"
       - "scopecards/scope_cash_lobby_default.yaml"
@@ -48,6 +51,7 @@ metrics:
     unit: "currency"
     agg: "sum"
     expression: "SUM(winnings)"
+    table_fqn: "dw_gold.fact_revenue_metrics"        
     scope_refs:
       - "scopecards/scope_gameplay_battles.yaml"
 
@@ -57,6 +61,7 @@ metrics:
     unit: "currency"
     agg: "sum"
     expression: "SUM(mpl_margin)"
+    table_fqn: "dw_gold.fact_revenue_metrics"        
     scope_refs:
       - "scopecards/scope_gameplay_battles.yaml"
 
@@ -66,6 +71,7 @@ metrics:
     unit: "currency"
     agg: "sum"
     expression: "SUM(te)"
+    table_fqn: "dw_gold.fact_revenue_metrics"        
     scope_refs:
       - "scopecards/scope_gameplay_battles.yaml"
 
@@ -75,6 +81,7 @@ metrics:
     unit: "currency"
     agg: "sum"
     expression: "SUM(iae)"
+    table_fqn: "dw_gold.fact_revenue_metrics"        
     scope_refs:
       - "scopecards/scope_gameplay_battles.yaml"
 
@@ -84,6 +91,7 @@ metrics:
     unit: "currency"
     agg: "sum"
     expression: "SUM(tax)"
+    table_fqn: "dw_gold.fact_revenue_metrics"        
     scope_refs:
       - "scopecards/scope_none.yaml"
 
@@ -97,6 +105,7 @@ metrics:
     unit: "currency"
     agg: "sum"
     expression: "SUM(gm)"
+    table_fqn: "dw_gold.fact_revenue_metrics"        
     scope_refs:
       - "scopecards/scope_no_transaction_type_filter.yaml"
 
@@ -106,6 +115,7 @@ metrics:
     unit: "currency"
     agg: "sum"
     expression: "SUM(cm1)"
+    table_fqn: "dw_gold.fact_revenue_metrics"        
     scope_refs:
       - "scopecards/scope_no_transaction_type_filter.yaml"
       - "scopecards/scope_cash_lobby_default.yaml"
@@ -119,6 +129,7 @@ metrics:
     unit: "currency"
     agg: "sum"
     expression: "SUM(bc_utilised)"
+    table_fqn: "dw_gold.fact_revenue_metrics"        
     scope_refs:
       - "scopecards/scope_gameplay_battles.yaml"
 
@@ -128,6 +139,7 @@ metrics:
     unit: "currency"
     agg: "sum"
     expression: "SUM(in_dc)"
+    table_fqn: "dw_gold.fact_revenue_metrics"        
     scope_refs:
       - "scopecards/scope_gameplay_battles.yaml"
 
@@ -137,6 +149,7 @@ metrics:
     unit: "currency"
     agg: "sum"
     expression: "SUM(in_wc)"
+    table_fqn: "dw_gold.fact_revenue_metrics"        
     scope_refs:
       - "scopecards/scope_gameplay_battles.yaml"
 
@@ -150,6 +163,7 @@ metrics:
     unit: "currency"
     agg: "sum"
     expression: "SUM(out_bc)"
+    table_fqn: "dw_gold.fact_revenue_metrics"        
     scope_refs:
       - "scopecards/scope_gameplay_battles.yaml"
 
@@ -159,6 +173,7 @@ metrics:
     unit: "currency"
     agg: "sum"
     expression: "SUM(out_wc)"
+    table_fqn: "dw_gold.fact_revenue_metrics"        
     scope_refs:
       - "scopecards/scope_gameplay_battles.yaml"
 
@@ -168,6 +183,7 @@ metrics:
     unit: "currency"
     agg: "sum"
     expression: "SUM(out_dc)"
+    table_fqn: "dw_gold.fact_revenue_metrics"        
     scope_refs:
       - "scopecards/scope_gameplay_battles.yaml"
 
@@ -177,6 +193,7 @@ metrics:
     unit: "currency"
     agg: "sum"
     expression: "SUM(out_gold)"
+    table_fqn: "dw_gold.fact_revenue_metrics"        
     scope_refs:
       - "scopecards/scope_gameplay_battles.yaml"
 
@@ -186,6 +203,7 @@ metrics:
     unit: "currency"
     agg: "sum"
     expression: "SUM(out_ticket)"
+    table_fqn: "dw_gold.fact_revenue_metrics"        
     scope_refs:
       - "scopecards/scope_gameplay_battles.yaml"
 
@@ -198,6 +216,7 @@ metrics:
     unit: "ratio"
     agg: "ratio"
     expression: "SAFE_DIVIDE(COUNTIF(is_won = 'true'), COUNT(*))"
+    table_fqn: "dw_gold.fact_revenue_metrics"        
     scope_refs:
       - "scopecards/scope_gameplay_battles.yaml"
 
@@ -207,9 +226,10 @@ metrics:
     unit: "ratio"
     agg: "ratio"
     expression: "SAFE_DIVIDE(SUM(winnings), SUM(gmv))"
+    table_fqn: "dw_gold.fact_revenue_metrics"        
     scope_refs:
       - "scopecards/scope_gameplay_battles.yaml"
-      - "scope_cash_lobby_default.yaml"
+      - "scopecards/scope_cash_lobby_default.yaml"
 
   # -------------------------
   # Per-user metrics
@@ -220,9 +240,10 @@ metrics:
     unit: "currency_per_user"
     agg: "per_user"
     expression: "SAFE_DIVIDE(SUM(gmv), COUNT(DISTINCT user_id))"
+    table_fqn: "dw_gold.fact_revenue_metrics"    
     scope_refs:
       - "scopecards/scope_gameplay_battles.yaml"
-      - "scope_cash_lobby_default.yaml"
+      - "scopecards/scope_cash_lobby_default.yaml"
 
   - metric_key: "marginpu"
     label: "Margin per User"
@@ -230,6 +251,7 @@ metrics:
     unit: "currency_per_user"
     agg: "per_user"
     expression: "SAFE_DIVIDE(SUM(mpl_margin), COUNT(DISTINCT user_id))"
+    table_fqn: "dw_gold.fact_revenue_metrics"    
     scope_refs:
       - "scopecards/scope_gameplay_battles.yaml"
       - "scopecards/scope_cash_lobby_default.yaml"
@@ -240,6 +262,7 @@ metrics:
     unit: "currency_per_user"
     agg: "per_user"
     expression: "SAFE_DIVIDE(SUM(cm1), COUNT(DISTINCT user_id))"
+    table_fqn: "dw_gold.fact_revenue_metrics"    
     scope_refs:
       - "scopecards/scope_no_transaction_type_filter.yaml"
       - "scopecards/scope_cash_lobby_default.yaml"
@@ -257,6 +280,7 @@ metrics:
     unit: "currency_per_user"
     agg: "per_user"
     expression: "SAFE_DIVIDE(SUM(in_bc), COUNT(DISTINCT user_id))"
+    table_fqn: "dw_gold.fact_revenue_metrics"    
     scope_refs:
       - "scopecards/scope_gameplay_battles.yaml"
     
@@ -272,6 +296,7 @@ metrics:
     unit: "currency_per_user"
     agg: "per_user"
     expression: "SAFE_DIVIDE(SUM(in_dc), COUNT(DISTINCT user_id))"
+    table_fqn: "dw_gold.fact_revenue_metrics"    
     scope_refs:
       - "scopecards/scope_gameplay_battles.yaml"
 
@@ -287,6 +312,7 @@ metrics:
     unit: "currency_per_user"
     agg: "per_user"
     expression: "SAFE_DIVIDE(SUM(in_wc), COUNT(DISTINCT user_id))"
+    table_fqn: "dw_gold.fact_revenue_metrics"    
     scope_refs:
       - "scopecards/scope_gameplay_battles.yaml"
 
@@ -304,6 +330,7 @@ metrics:
     unit: "count_per_user"
     agg: "per_user"
     expression: "SAFE_DIVIDE(COUNT(*), COUNT(DISTINCT user_id))"
+    table_fqn: "dw_gold.fact_revenue_metrics"    
     scope_refs:
       - "scopecards/scope_gameplay_battles.yaml"
     
@@ -317,6 +344,7 @@ metrics:
     unit: "score"
     agg: "avg"
     expression: "AVG(rank1_target_score)"
+    table_fqn: "dw_gold.fact_revenue_metrics"    
     scope_refs:
       - "scopecards/scope_hof_only.yaml"
 
@@ -326,6 +354,7 @@ metrics:
     unit: "score"
     agg: "avg"
     expression: "AVG(rank2_target_score)"
+    table_fqn: "dw_gold.fact_revenue_metrics"    
     scope_refs:
       - "scopecards/scope_hof_only.yaml"
 
@@ -335,5 +364,56 @@ metrics:
     unit: "score"
     agg: "avg"
     expression: "AVG(rank3_target_score)"
+    table_fqn: "dw_gold.fact_revenue_metrics"
     scope_refs:
       - "scopecards/scope_hof_only.yaml"
+
+
+
+  # -------------------------
+  # MPL Wallet Top-ups
+  # -------------------------
+  - metric_key: "deposit_amount"
+    label: "deposit"
+    aliases: ["deposits", "deposit", "deposit amount", "wallet top-up", "wallet topup", "wallet recharge"]
+    unit: "currency"
+    agg: "sum"
+    expression: "sum(amount)"
+    table_fqn: "dw_silver.transactions_fat"    
+    scope_refs:
+      - "scopecards/scope_wallet_deposits_only.yaml"      
+     
+
+  - metric_key: "withdrawal_amount"
+    label: "withdrawal"
+    aliases: ["withdrawals", "withdrawal amount", "wallet withdrawal"]
+    unit: "currency"
+    agg: "sum"
+    expression: "sum(amount)"
+    table_fqn: "dw_silver.transactions_fat"    
+    scope_refs:
+      - "scopecards/scope_wallet_withdrawals_only.yaml"            
+
+  - metric_key: "withdrawal_to_deposit_ratio"
+    label: "Withdrawal / Deposit"
+    aliases: ["withdrawal by deposits", "withdrawal by deposit", "withdrawal/deposit", "w/d", "wd ratio", "withdrawal to deposit"]
+    unit: "ratio"
+    agg: "ratio"
+    expression: |
+      SAFE_DIVIDE(
+        SUM(CASE WHEN LOWER(transaction_category) = 'withdrawal'
+                  AND LOWER(transaction_type) = 'debit'
+                  AND LOWER(money_type) = 'winning'
+                 THEN amount ELSE 0 END),
+        SUM(CASE WHEN LOWER(transaction_category) = 'deposit'
+                  AND LOWER(transaction_type) = 'credit'
+                  AND LOWER(money_type) = 'deposit'
+                 THEN amount ELSE 0 END)
+      )
+    table_fqn: "dw_silver.transactions_fat"
+    scope_refs:
+      - "scopecards/scope_wallet_all_transactions.yaml"
+
+      
+
+      

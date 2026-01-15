@@ -97,14 +97,14 @@ sections:
           column: "entry_fee"
 
       - term: "Deposit Cash (DC)"
-        aliases: ["deposit cash", "deposit"]
+        aliases: ["deposit cash", "dc"]
         definition: >
           Non-withdrawable cash credited by MPL that can be used only for gameplay.
         schema_mapping:
           column: "in_dc"
 
       - term: "Bonus Cash (BC)"
-        aliases: ["bonus cash", "bonus"]
+        aliases: ["bonus cash", "bonus cash utilised", "bc utilised"]
         definition: >
           Promotional wallet credit given by the platform.
           Used for entry but not withdrawable.
@@ -112,7 +112,7 @@ sections:
           columns: ["in_bc", "bc_utilised"]
 
       - term: "Winning Cash (WC)"
-        aliases: ["winning cash", "winnings used"]
+        aliases: ["winning cash", "winnings used",""]
         definition: >
           Withdrawable cash earned from previous wins and reused for entry.
         schema_mapping:
@@ -238,3 +238,79 @@ sections:
           Final position achieved by a user in a Hall-of-Fame battle.
         schema_mapping:
           column: "rank"
+
+
+  # ==================================================
+  # Wallet Cashflow — Deposits & Withdrawals (Top-ups)
+  # ==================================================
+  - section_key: "wallet_cashflow"
+    title: "Wallet Deposits & Withdrawals (Cashflow)"
+    description: >
+      This section defines user top-ups (deposits) and cash-outs (withdrawals).
+      These are NOT gameplay wallet usage columns (in_dc/in_wc/in_bc) and should
+      be measured from wallet transaction logs / payments ledger tables.
+
+    entries:
+      - term: "Deposit (Wallet Top-up)"
+        aliases:
+          [
+            "deposit",
+            "deposits",
+            "top up",
+            "top-up",
+            "wallet top-up",
+            "wallet topup",
+            "add cash",
+            "recharge",
+            "wallet recharge"
+          ]
+        definition: >
+          Money added into a user's wallet via a top-up/payment transaction.
+          This is a cashflow event and is separate from "Deposit Cash (DC) utilised"
+          used in gameplay battles.
+        schema_mapping:
+          columns: ["transaction_category", "transaction_type", "money_type", "amount"]
+          filters:
+            - "LOWER(transaction_category) = 'deposit'"
+            - "LOWER(transaction_type) = 'credit'"
+            - "LOWER(money_type) = 'deposit'"
+
+      - term: "Withdrawal (Cash-out)"
+        aliases:
+          [
+            "withdrawal",
+            "withdrawals",
+            "cashout",
+            "cash-out",
+            "wallet withdrawal",
+            "withdraw"
+          ]
+        definition: >
+          Money withdrawn/cashed out from a user's wallet. Typically debited from
+          Winning wallet balance. This is a cashflow event and does not represent
+          gameplay spending.
+        schema_mapping:
+          columns: ["transaction_category", "transaction_type", "money_type", "amount"]
+          filters:
+            - "LOWER(transaction_category) = 'withdrawal'"
+            - "LOWER(transaction_type) = 'debit'"
+            - "LOWER(money_type) = 'winning'"
+
+      - term: "Withdrawal to Deposit Ratio"
+        aliases:
+          [
+            "withdrawal/deposit",
+            "withdrawal to deposit",
+            "w/d",
+            "wd ratio",
+            "withdrawal by deposits"
+          ]
+        definition: >
+          Ratio of withdrawal amount to deposit amount over the same time period.
+          Used as a cashflow health metric (not a gameplay metric).
+        schema_mapping:
+          note: >
+            Compute as SAFE_DIVIDE(withdrawal_amount, deposit_amount) using the
+            above deposit/withdrawal definitions on wallet transaction tables.
+
+

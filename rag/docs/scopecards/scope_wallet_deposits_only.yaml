@@ -1,0 +1,8 @@
+doc_type: ScopeCard
+version: 1
+scope_name: "scope_wallet_deposits_only"
+description: "Successful deposit credits into Deposit wallet."
+required_filters:
+  - "LOWER(transaction_category) = 'deposit'"
+  - "LOWER(transaction_type) = 'credit'"
+  - "LOWER(money_type) = 'deposit'"

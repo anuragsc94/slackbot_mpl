@@ -1,0 +1,6 @@
+doc_type: ScopeCard
+version: 1
+scope_name: "scope_wallet_credits_only"
+description: "All CREDIT transactions."
+required_filters:
+  - "LOWER(transaction_type) = 'credit'"

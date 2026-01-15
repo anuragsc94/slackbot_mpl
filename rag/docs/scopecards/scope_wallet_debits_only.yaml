@@ -1,0 +1,6 @@
+doc_type: ScopeCard
+version: 1
+scope_name: "scope_wallet_debits_only"
+description: "All DEBIT transactions."
+required_filters:
+  - "LOWER(transaction_type) = 'debit'"

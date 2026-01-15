@@ -1,0 +1,84 @@
+doc_type: TableCard
+version: 1
+table_fqn: "dw_silver.transactions_fat"
+timezone: "Asia/Kolkata"
+
+grain:
+  description: "One row per wallet transaction event (credit/debit), with enriched/injected app, geo, and device attributes."
+  candidate_keys:
+    - dt
+    - id
+    - user_id
+    - reference_id
+
+time:
+  date_column: "dt"
+  timestamp_column: "ist_time"
+  partition_column: "dt"
+
+identifiers:
+  - { name: "id", type: "INT64" }
+  - { name: "user_id", type: "STRING" }
+  - { name: "reference_id", type: "STRING" }
+  - { name: "request_id", type: "STRING" }
+  - { name: "idempotency_key", type: "STRING" }
+
+dimensions:
+  - { name: "country_code", type: "STRING" }
+  - { name: "local_currency", type: "STRING" }
+  - { name: "money_type", type: "STRING" }
+  - { name: "transaction_type", type: "STRING" }
+  - { name: "transaction_category", type: "STRING" }
+  - { name: "transaction_tag", type: "STRING" }
+  - { name: "reference_type", type: "STRING" }
+
+
+  # Enriched / injected attributes (often used for segmentation)
+  - { name: "injected_app_type", type: "STRING" }
+  - { name: "injected_country_code", type: "STRING" }
+  - { name: "injected_profile_tier", type: "STRING" }
+  - { name: "injected_language_code", type: "STRING" }
+  - { name: "injected_is_pro", type: "STRING" }
+  - { name: "injected_loyalty_tier", type: "STRING" }
+  - { name: "injected_app_version", type: "STRING" }
+  - { name: "injected_app_react_version", type: "STRING" }
+  - { name: "injected_app_os_type", type: "STRING" }
+  - { name: "injected_app_os_version", type: "STRING" }
+
+  - { name: "ist_year", type: "INT64" }
+  - { name: "ist_month", type: "INT64" }
+  - { name: "ist_day_of_year", type: "INT64" }
+  - { name: "ist_hour", type: "INT64" }
+  - { name: "ist_minute", type: "INT64" }
+  - { name: "ist_second", type: "INT64" }
+
+measures:
+  float64:
+    - amount
+    - local_currency_value
+
+
+semi_structured:
+  - { name: "description", type: "STRING" }
+  - { name: "extra_info", type: "STRING" }
+
+type_gotchas:
+  - { column: "ist_time", stored_as: "STRING", note: "Formatted timestamp string with timezone offset (e.g., +0530)." }
+  - { column: "ts", stored_as: "STRING", note: "UTC timestamp-like string with timezone offset (e.g., +0000)." }
+  - { column: "created_at", stored_as: "NUMERIC", note: "Epoch milliseconds stored as NUMERIC (e.g., 1768377616842)." }
+  - { column: "__deleted", stored_as: "STRING", allowed_values: ["true", "false"] }
+
+derived_dimensions:
+  - name: "app_type"
+    depends_on: ["injected_app_type"]
+  - name: "effective_country_code"
+    depends_on: ["injected_country_code", "country_code"]
+
+supported_scopes:
+  # Add these as you create ScopeCards for this table
+  - "scope_wallet_all_transactions"
+  - "scope_wallet_deposits_only"
+  - "scope_wallet_withdrawals_only"
+  - "scope_wallet_credits_only"
+  - "scope_wallet_debits_only"
+

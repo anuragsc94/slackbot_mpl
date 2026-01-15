@@ -1,5 +1,4 @@
 # rag/chunker.py
-
 from __future__ import annotations
 
 import hashlib
@@ -266,6 +265,7 @@ Default Scopes: {format_list(default_scopes)}
             unit = (m or {}).get("unit", "")
             agg = (m or {}).get("agg", "")
             scope_refs = (m or {}).get("scope_refs", []) or []
+            table_fqn = (m or {}).get("table_fqn")  # ✅ NEW
 
             aliases_text = make_searchable_aliases(aliases)
 
@@ -274,6 +274,7 @@ Label: {label}
 
 {aliases_text}
 
+Table: {table_fqn}
 SQL Expression: {expression}
 Aggregation: {agg}
 Unit: {unit}
@@ -293,6 +294,7 @@ Technical Details:
                 "expression": expression,
                 "unit": unit,
                 "agg": agg,
+                "table_fqn": table_fqn,  # ✅ NEW
             }
             _id = stable_id(rel_path, "metric", str(mk))
             docs.append(make_doc(text, meta))

@@ -56,7 +56,7 @@ from app.query_orchestrator import handle_query_with_rag
 TEST_CASES = [
     # -------------------------
     # CORE METRIC + POLICY
-    "show me month over month GMV for cash lobby last 60 days in US",   
+    "what is the w/d ratio for US in last 2 months, aggregated weekly",   
 ]
 
 
