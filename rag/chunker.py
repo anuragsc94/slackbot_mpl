@@ -19,7 +19,15 @@ RAG_DIR = Path(__file__).resolve().parent
 RAG_DOCS_DIR = RAG_DIR  # YAMLs are directly in rag/ folder
 CHROMA_DIR = RAG_DIR / "vector_db_chroma"
 COLLECTION_NAME = "mpl_yaml_docs"
-GEMINI_EMBED_MODEL = "text-embedding-004"
+#GEMINI_EMBED_MODEL = "models/embedding-001"
+#GEMINI_EMBED_MODEL = "text-embedding-004"
+
+GEMINI_EMBED_MODEL = "models/gemini-embedding-001"
+
+embeddings = GoogleGenerativeAIEmbeddings(
+    model=GEMINI_EMBED_MODEL,
+    task_type="RETRIEVAL_DOCUMENT",  # good default for RAG
+)
 
 
 # -----------------------------
@@ -431,7 +439,7 @@ def build_chroma() -> None:
     print("📁 RAG_DOCS_DIR:", RAG_DOCS_DIR)
     print("📄 YAML files:", len(files))
 
-    embeddings = GoogleGenerativeAIEmbeddings(model=GEMINI_EMBED_MODEL)
+    # embeddings = GoogleGenerativeAIEmbeddings(model=GEMINI_EMBED_MODEL)
 
     # Fresh rebuild to avoid duplicates
     if CHROMA_DIR.exists():

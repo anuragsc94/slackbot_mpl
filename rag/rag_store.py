@@ -9,12 +9,17 @@ from langchain_chroma import Chroma
 
 CHROMA_DIR = "rag/vector_db_chroma"
 COLLECTION_NAME = "mpl_yaml_docs"
-EMBED_MODEL = "text-embedding-004"
+EMBED_MODEL = "models/gemini-embedding-001" 
+# EMBED_MODEL = "text-embedding-004"
+
 
 
 @lru_cache(maxsize=1)
 def get_vectorstore() -> Chroma:
-    embeddings = GoogleGenerativeAIEmbeddings(model=EMBED_MODEL)
+    embeddings = GoogleGenerativeAIEmbeddings(
+    model=EMBED_MODEL,
+    task_type="RETRIEVAL_DOCUMENT",  # good default for RAG
+)
     return Chroma(
         collection_name=COLLECTION_NAME,
         embedding_function=embeddings,
