@@ -1,0 +1,14 @@
+bots:
+  mpl_prod:
+    # Recommended: reference tokens via env vars (don’t commit secrets)
+    slack_bot_token_env: SLACK_BOT_TOKEN_MPL_PROD   # xoxb-...
+    slack_app_token_env: SLACK_APP_TOKEN_MPL_PROD   # xapp-... (Socket Mode)
+
+    # BigQuery project to execute queries in for THIS bot
+    bq_project_id: your-prod-bq-project-id
+
+  mpl_staging:
+    slack_bot_token_env: SLACK_BOT_TOKEN_MPL_STAGING
+    slack_app_token_env: SLACK_APP_TOKEN_MPL_STAGING
+    bq_project_id: your-staging-bq-project-id
+

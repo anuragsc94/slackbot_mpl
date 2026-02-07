@@ -97,3 +97,80 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
+```
+
+---
+
+## 🚀 Deployment on Dataproc VM (Multi Slack Bots → Multi BQ Projects)
+
+You can run **multiple Slack apps (bots)** from the **same VM process**. Each bot is tied to a specific BigQuery project via a config file mapping.
+
+### Multi-bot config
+
+1) Copy `config/bots.example.yaml` to a VM-local path (don’t commit secrets):
+- Example: `/etc/slackbot_mpl/bots.yaml`
+
+2) Export Slack tokens as env vars (recommended) and reference them in `bots.yaml`:
+- Each bot needs:
+  - `xoxb-...` **bot token**
+  - `xapp-...` **app-level token** (Socket Mode)
+
+3) Set `bq_project_id` per bot in `bots.yaml`. Your YAML docs and SQL can stay the same (dataset.table).
+
+### Required environment variables
+
+- **LLM / embeddings**
+  - `GEMINI_API_KEY` (or `GOOGLE_API_KEY`)
+  - optional: `GEMINI_MODEL`
+
+- **Multi-bot switch**
+  - `BOT_CONFIG_PATH=/etc/slackbot_mpl/bots.yaml`
+
+- **GCP auth**
+  - Prefer VM-attached service account / workload identity (recommended)
+  - Or set `GOOGLE_APPLICATION_CREDENTIALS=/path/to/service_account.json`
+
+### Example `systemd` unit (Dataproc VM)
+
+Create `/etc/systemd/system/slackbot-mpl.service`:
+
+```ini
+[Unit]
+Description=Slack RAG Text-to-SQL Bot (multi-bot)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/slackbot_mpl
+Environment=BOT_CONFIG_PATH=/etc/slackbot_mpl/bots.yaml
+Environment=LOG_LEVEL=INFO
+
+# Slack tokens referenced by bots.yaml
+Environment=SLACK_BOT_TOKEN_MPL_PROD=...
+Environment=SLACK_APP_TOKEN_MPL_PROD=...
+Environment=SLACK_BOT_TOKEN_MPL_STAGING=...
+Environment=SLACK_APP_TOKEN_MPL_STAGING=...
+
+# LLM
+Environment=GEMINI_API_KEY=...
+Environment=GEMINI_MODEL=gemini-2.5-flash
+
+# If not using VM identity, uncomment:
+# Environment=GOOGLE_APPLICATION_CREDENTIALS=/etc/slackbot_mpl/sa.json
+
+ExecStart=/opt/slackbot_mpl/.venv/bin/python /opt/slackbot_mpl/main.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Then:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now slackbot-mpl
+sudo systemctl status slackbot-mpl
+```
+

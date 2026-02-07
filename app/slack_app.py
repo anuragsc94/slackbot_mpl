@@ -74,7 +74,7 @@ def _upload_df_csv(
 # Slack App Builder
 # ---------------------------------------------------------------------
 
-def build_slack_app(slack_bot_token: str) -> App:
+def build_slack_app(slack_bot_token: str, *, bq_project_id: Optional[str] = None, bot_name: str = "") -> App:
     app = App(token=slack_bot_token)
 
     # ================================================================
@@ -86,7 +86,8 @@ def build_slack_app(slack_bot_token: str) -> App:
         thread_ts = event.get("ts")
 
         User_question_on_slack = _strip_mention(event.get("text"))
-        logger.info(f"📩 app_mention received: {User_question_on_slack}")
+        prefix = f"[{bot_name}] " if bot_name else ""
+        logger.info(f"{prefix}📩 app_mention received: {User_question_on_slack}")
 
         # Pre-SQL fallback (UNCHANGED)
         fallback, _ = should_fallback(User_question_on_slack)
@@ -118,8 +119,8 @@ def build_slack_app(slack_bot_token: str) -> App:
                 thread_ts=thread_ts,
             )
 
-            df_preview = run_sql_df(sql, max_rows=PREVIEW_ROWS)
-            df_csv = run_sql_df(sql, max_rows=CSV_MAX_ROWS)
+            df_preview = run_sql_df(sql, max_rows=PREVIEW_ROWS, project_id=bq_project_id)
+            df_csv = run_sql_df(sql, max_rows=CSV_MAX_ROWS, project_id=bq_project_id)
 
             say(
                 text=f"*Generated SQL:*\n```{sql}```",
@@ -158,7 +159,8 @@ def build_slack_app(slack_bot_token: str) -> App:
         thread_ts = event.get("ts")
 
         User_question_on_slack = _strip_mention(event.get("text"))
-        logger.info(f"✅ message event received: {User_question_on_slack}")
+        prefix = f"[{bot_name}] " if bot_name else ""
+        logger.info(f"{prefix}✅ message event received: {User_question_on_slack}")
 
         # Simple greeting response (UNCHANGED behavior)
         if User_question_on_slack.lower() in {"hi", "hello", "hey"}:
@@ -185,8 +187,8 @@ def build_slack_app(slack_bot_token: str) -> App:
                 thread_ts=thread_ts,
             )
 
-            df_preview = run_sql_df(sql, max_rows=PREVIEW_ROWS)
-            df_csv = run_sql_df(sql, max_rows=CSV_MAX_ROWS)
+            df_preview = run_sql_df(sql, max_rows=PREVIEW_ROWS, project_id=bq_project_id)
+            df_csv = run_sql_df(sql, max_rows=CSV_MAX_ROWS, project_id=bq_project_id)
 
             say(
                 text=f"*Generated SQL:*\n```{sql}```",
